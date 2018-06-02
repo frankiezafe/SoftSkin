@@ -120,3 +120,19 @@ void SkinDot::set_v3( Vector3& v3, const Vector3& src ) {
 void SkinDot::_bind_methods() {
 // 	ClassDB::bind_method(D_METHOD("init", "port"), &OSCreceiver::init);
 }
+
+void SkinDot::update(float delta_time) {
+	
+	if (_kicks < 2) {
+		_kicks = 2;
+	};
+	
+	Vector3 consumed = _force * _damping / sqrt(_kicks - 1);
+	_force -= consumed;
+	_vert += consumed;
+	_vert += _normal * delta_time * 0.1;
+	//        (*this) += _force * ( _damping / sqrt( _kicks ) );
+	//        _force.set(0,0,0);
+	_kicks = 0;
+	
+}
