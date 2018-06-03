@@ -87,11 +87,11 @@ public:
 			sd.vert().z;
 	}
 	
-protected:
-	
 	static void set_v3( Vector3& v3, const float x, const float y, const float z );
 	
 	static void set_v3( Vector3& v3, const Vector3& src );
+	
+protected:
 
 // 	static void _bind_methods();
 	

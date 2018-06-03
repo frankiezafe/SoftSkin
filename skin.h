@@ -45,26 +45,41 @@
 #define SKIN_H
 
 #include <iostream>
-#include "scene/3d/immediate_geometry.h"
 
 #include "skindot.h"
 #include "skinfiber.h"
 
-class Skin: public ImmediateGeometry {
+#include "scene/3d/visual_instance.h"
+#include "scene/resources/mesh.h"
+#include "drivers/gles3/rasterizer_storage_gles3.h"
+
+class Skin: public GeometryInstance {
 	
-	GDCLASS(Skin, ImmediateGeometry);
+	GDCLASS(Skin, GeometryInstance);
 	
 public:
 	
 	Skin();
 	
+	~Skin();
+	
 	void cube();
+	
+	void update( float delta );
+	
+	virtual AABB get_aabb() const;
+	
+	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
 	
 protected:
 	
 	static void _bind_methods();
 	
+	AABB aabb;
+	
 private:
+	
+	RID im;
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;

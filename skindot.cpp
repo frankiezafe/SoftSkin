@@ -48,7 +48,7 @@ SkinDot::SkinDot() {
 	set_v3( _vert, 0,0,0 );
 	set_v3( _force, 0,0,0 );
 	set_v3( _normal, 0,0,0 );
-	_damping = 0;
+	_damping = 1;
 	_kicks = 0;
 }
 
@@ -56,7 +56,7 @@ SkinDot::SkinDot(float x, float y, float z) {
 	set_v3( _vert, x, y, z );
 	set_v3( _force, 0,0,0 );
 	set_v3( _normal, 0,0,0 );
-	_damping = 0;
+	_damping = 1;
 	_kicks = 0;
 }
 
@@ -130,7 +130,7 @@ void SkinDot::update(float delta_time) {
 	if (_kicks < 2) {
 		_kicks = 2;
 	};
-	
+		
 	Vector3 consumed = _force * _damping / sqrt(_kicks - 1);
 	_force -= consumed;
 	_vert += consumed;

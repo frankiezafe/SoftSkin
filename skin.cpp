@@ -45,6 +45,9 @@
 
 Skin::Skin() {
 	
+	im = VisualServer::get_singleton()->immediate_create();
+	set_base(im);
+	
 	dots_num = 0;
 	fibers_num = 0;
 	faces_num = 0;
@@ -55,10 +58,22 @@ Skin::Skin() {
 	
 }
 
+Skin::~Skin() {
+	
+	VisualServer::get_singleton()->free(im);
+	
+	if ( dots != 0 ) delete [] dots;
+	if ( fibers != 0 ) delete [] fibers;
+	if ( faces != 0 ) delete [] faces;
+	
+}
+
 void Skin::cube() {
-		
+	
 	dots_num = 8;
+	fibers_num = 12 * 2;
 	faces_num = 12 * 3;
+	uint32_t i =0;
 	
 	dots = new SkinDot[dots_num];
 	
@@ -72,59 +87,158 @@ void Skin::cube() {
 	dots[6].vert( 1,1,1 );
 	dots[7].vert( -1,1,1 );
 	
-	uint32_t i =0;
-	faces = new uint32_t[faces_num];
+	fibers = new SkinFiber[fibers_num];
+	i =0;
+	// edges
+	fibers[i].init( &dots[0], &dots[1] ); ++i;
+	fibers[i].init( &dots[1], &dots[2] ); ++i;
+	fibers[i].init( &dots[2], &dots[3] ); ++i;
+	fibers[i].init( &dots[3], &dots[0] ); ++i;
 	
-	faces[i] = 0; ++i;
-	faces[i] = 1; ++i;
-	faces[i] = 2; ++i;
-	faces[i] = 2; ++i;
-	faces[i] = 3; ++i;
-	faces[i] = 0; ++i;
+	fibers[i].init( &dots[0], &dots[4] ); ++i;
+	fibers[i].init( &dots[1], &dots[5] ); ++i;
+	fibers[i].init( &dots[2], &dots[6] ); ++i;
+	fibers[i].init( &dots[3], &dots[7] ); ++i;
 	
-	faces[i] = 5; ++i;
-	faces[i] = 1; ++i;
-	faces[i] = 0; ++i;
-	faces[i] = 0; ++i;
-	faces[i] = 4; ++i;
-	faces[i] = 5; ++i;
+	fibers[i].init( &dots[4], &dots[5] ); ++i;
+	fibers[i].init( &dots[5], &dots[6] ); ++i;
+	fibers[i].init( &dots[6], &dots[7] ); ++i;
+	fibers[i].init( &dots[7], &dots[4] ); ++i;
 	
-	faces[i] = 6; ++i;
-	faces[i] = 2; ++i;
-	faces[i] = 1; ++i;
-	faces[i] = 1; ++i;
-	faces[i] = 5; ++i;
-	faces[i] = 6; ++i;
+	// faces median
+	fibers[i].init( &dots[0], &dots[2] ); ++i;
+	fibers[i].init( &dots[1], &dots[3] ); ++i;
+	fibers[i].init( &dots[0], &dots[5] ); ++i;
+	fibers[i].init( &dots[1], &dots[4] ); ++i;
+	fibers[i].init( &dots[1], &dots[6] ); ++i;
+	fibers[i].init( &dots[2], &dots[5] ); ++i;
+	fibers[i].init( &dots[2], &dots[7] ); ++i;
+	fibers[i].init( &dots[3], &dots[6] ); ++i;
+	fibers[i].init( &dots[3], &dots[4] ); ++i;
+	fibers[i].init( &dots[0], &dots[7] ); ++i;
+	fibers[i].init( &dots[4], &dots[6] ); ++i;
+	fibers[i].init( &dots[7], &dots[5] ); ++i;
 	
-	faces[i] = 7; ++i;
-	faces[i] = 3; ++i;
-	faces[i] = 2; ++i;
-	faces[i] = 2; ++i;
-	faces[i] = 6; ++i;
-	faces[i] = 7; ++i;
-	
-	faces[i] = 4; ++i;
-	faces[i] = 0; ++i;
-	faces[i] = 3; ++i;
-	faces[i] = 3; ++i;
-	faces[i] = 7; ++i;
-	faces[i] = 4; ++i;
-	
-	faces[i] = 6; ++i;
-	faces[i] = 5; ++i;
-	faces[i] = 4; ++i;
-	faces[i] = 4; ++i;
-	faces[i] = 7; ++i;
-	faces[i] = 6; ++i;
-	
-	begin(Mesh::PRIMITIVE_TRIANGLES );
-	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		add_vertex( dots[faces[i]].vert() );
+	for( uint32_t i = 0; i < fibers_num; ++i ) {
+		fibers[i].musclise( 0.9, 1.1, 0.5, i * 0.001 );
 	}
-	end();
+	
+	faces = new uint32_t[faces_num];
+	i =0;
+	faces[i] = 0; ++i;
+	faces[i] = 1; ++i;
+	faces[i] = 2; ++i;
+	faces[i] = 2; ++i;
+	faces[i] = 3; ++i;
+	faces[i] = 0; ++i;
+	
+	faces[i] = 5; ++i;
+	faces[i] = 1; ++i;
+	faces[i] = 0; ++i;
+	faces[i] = 0; ++i;
+	faces[i] = 4; ++i;
+	faces[i] = 5; ++i;
+	
+	faces[i] = 6; ++i;
+	faces[i] = 2; ++i;
+	faces[i] = 1; ++i;
+	faces[i] = 1; ++i;
+	faces[i] = 5; ++i;
+	faces[i] = 6; ++i;
+	
+	faces[i] = 7; ++i;
+	faces[i] = 3; ++i;
+	faces[i] = 2; ++i;
+	faces[i] = 2; ++i;
+	faces[i] = 6; ++i;
+	faces[i] = 7; ++i;
+	
+	faces[i] = 4; ++i;
+	faces[i] = 0; ++i;
+	faces[i] = 3; ++i;
+	faces[i] = 3; ++i;
+	faces[i] = 7; ++i;
+	faces[i] = 4; ++i;
+	
+	faces[i] = 6; ++i;
+	faces[i] = 5; ++i;
+	faces[i] = 4; ++i;
+	faces[i] = 4; ++i;
+	faces[i] = 7; ++i;
+	faces[i] = 6; ++i;
+	
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
+		RID());
+	
+	for ( uint32_t i = 0; i < faces_num; ++i ) {
+		const Vector3& vert = dots[faces[i]].vert();
+		if ( i == 0 ) {
+			aabb.position = vert;
+			aabb.size = Vector3();
+		} else {
+			aabb.expand_to( vert );
+		}
+		VisualServer::get_singleton()->immediate_vertex(im, vert );
+	}
+		
+	VisualServer::get_singleton()->immediate_end(im);
+	
+// 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks[0].vertices.size() << std::endl;
+	
+}
+
+AABB Skin::get_aabb() const {
+	
+	return aabb;
+}
+
+PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
+	
+	return PoolVector<Face3>();
+	
+}
+
+void Skin::update( float delta ) {
+	
+	RasterizerStorageGLES3::Immediate* imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+	Vector<Vector3>& vs = imm->chunks[0].vertices;
+	
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		dots[i].update( delta );
+		SkinDot::set_v3( vs[i], dots[i].vert() );
+	}
+	for( uint32_t i = 0; i < fibers_num; ++i ) {
+		fibers[i].update( delta );
+	}
+	
+	VisualServer::get_singleton()->immediate_clear(im);
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
+		RID());
+	
+	for ( uint32_t i = 0; i < faces_num; ++i ) {
+		const Vector3& vert = dots[faces[i]].vert();
+		if ( i == 0 ) {
+			aabb.position = vert;
+			aabb.size = Vector3();
+		} else {
+			aabb.expand_to( vert );
+		}
+		VisualServer::get_singleton()->immediate_vertex(im, vert );
+	}
+	
+// 	imm->building = true;
+	VisualServer::get_singleton()->immediate_end(im);
+	
+// 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks.size() << std::endl;	
+// 	std::cout << fibers[0].rest_len() << std::endl;
 	
 }
 
 void Skin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("cube"), &Skin::cube);
+	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
 }
