@@ -207,34 +207,14 @@ void Skin::update( float delta ) {
 	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		dots[i].update( delta );
-		SkinDot::set_v3( vs[i], dots[i].vert() );
 	}
 	for( uint32_t i = 0; i < fibers_num; ++i ) {
 		fibers[i].update( delta );
 	}
-	
-	VisualServer::get_singleton()->immediate_clear(im);
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
-		RID());
-	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		const Vector3& vert = dots[faces[i]].vert();
-		if ( i == 0 ) {
-			aabb.position = vert;
-			aabb.size = Vector3();
-		} else {
-			aabb.expand_to( vert );
-		}
-		VisualServer::get_singleton()->immediate_vertex(im, vert );
+		SkinDot::set_v3( vs[i], dots[faces[i]].vert() );
 	}
-	
-// 	imm->building = true;
-	VisualServer::get_singleton()->immediate_end(im);
-	
-// 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks.size() << std::endl;	
-// 	std::cout << fibers[0].rest_len() << std::endl;
+	imm->instance_change_notify();
 	
 }
 
