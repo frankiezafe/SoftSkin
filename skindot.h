@@ -46,6 +46,8 @@
 #ifndef SKINDOT_H
 #define SKINDOT_H
 
+#include <iostream>
+#include <ostream>
 #include "vector3.h"
 
 class SkinDot {
@@ -69,12 +71,21 @@ public:
 	const float& damping() const;
 	
 	const float& kicks() const;
-		
+	
+	void vert( float x, float y, float z );
+	
 	void normal( float x, float y, float z );
 	
 	void update(float delta_time);
 	
 	void operator = ( const SkinDot& src );
+	
+	friend std::ostream &operator<<(std::ostream &os, SkinDot const &sd) { 
+		return os << 
+			sd.vert().x << ", " <<
+			sd.vert().y << ", " <<
+			sd.vert().z;
+	}
 	
 protected:
 	
@@ -82,7 +93,7 @@ protected:
 	
 	static void set_v3( Vector3& v3, const Vector3& src );
 
-	static void _bind_methods();
+// 	static void _bind_methods();
 	
 private:
 		

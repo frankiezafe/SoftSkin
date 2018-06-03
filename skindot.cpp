@@ -74,7 +74,7 @@ void SkinDot::push(const Vector3& f) {
 }
 
 const Vector3& SkinDot::vert() const {
-	return _force;
+	return _vert;
 }
 
 const Vector3& SkinDot::force() const {
@@ -91,6 +91,10 @@ const float& SkinDot::damping() const {
 
 const float& SkinDot::kicks() const {
 	return _kicks;
+}
+
+void SkinDot::vert( float x, float y, float z ) {
+	set_v3( _vert, x, y, z );
 }
 
 void SkinDot::normal( float x, float y, float z ) {
@@ -117,9 +121,9 @@ void SkinDot::set_v3( Vector3& v3, const Vector3& src ) {
 	v3.z = src.z;
 }
 
-void SkinDot::_bind_methods() {
+// void SkinDot::_bind_methods() {
 // 	ClassDB::bind_method(D_METHOD("init", "port"), &OSCreceiver::init);
-}
+// }
 
 void SkinDot::update(float delta_time) {
 	
