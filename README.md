@@ -2,10 +2,10 @@
 
 Soft skin library for godot engine
 
-## origin
+## remotes
 
-* https://gitlab.com/frankiezafe/SoftSkin - main repo
-* https://github.com/frankiezafe/SoftSkin - mirror repo
+* https://gitlab.com/frankiezafe/SoftSkin - origin
+* https://github.com/frankiezafe/SoftSkin - mirror
 
 ## notes
 
