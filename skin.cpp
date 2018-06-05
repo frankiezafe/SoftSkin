@@ -292,12 +292,20 @@ void Skin::parse( const String& path ) {
 		Vector<float>& vs = decompressed.verts[i];
 		dots[i].vert( vs[1], vs[2], vs[3] );
 		dots[i].normal( vs[4], vs[5], vs[6] );
+		dots[i].damping( 0.2f );
 	}
 	
 	fibers = new SkinFiber[fibers_num];
 	for( int i = 0; i < fibers_num; ++i ) {
 		Vector<int>& vs = decompressed.edges[i];
 		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
+		if ( vs[2] != 0 ) {
+			fibers[i].musclise(
+				fibers[i].init_rest_len() * 0.2,
+				fibers[i].init_rest_len() * 1.4,
+				0.5, 0
+				);
+		}
 	}
 	
 	faces = new uint32_t[faces_num];

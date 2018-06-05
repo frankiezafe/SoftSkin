@@ -76,6 +76,8 @@ public:
 	
 	void normal( float x, float y, float z );
 	
+	void damping( float d );
+	
 	void update(float delta_time);
 	
 	void operator = ( const SkinDot& src );

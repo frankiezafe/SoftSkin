@@ -101,6 +101,10 @@ void SkinDot::normal( float x, float y, float z ) {
 	set_v3( _normal, x, y, z );
 }
 
+void SkinDot::damping( float d ) {
+	_damping = d;
+}
+
 void SkinDot::operator = ( const SkinDot& src ) {
 	set_v3( _vert, src.vert() );
 	set_v3( _force, src.force() );
