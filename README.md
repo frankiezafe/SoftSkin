@@ -1,11 +1,20 @@
 # SoftSkin
 
+![vimeo banner](https://polymorph.cool/wp-content/uploads/2018/06/softskin_vimeo_thumb.jpg)
+
 Soft skin library for godot engine.
+
+First prototype demo (openframeworks): 
+
+* [soft skin #003](https://vimeo.com/255103472)
+* [soft skin #002](https://vimeo.com/255073574)
+* [soft skin #001](https://vimeo.com/254765875)
 
 ## remotes
 
 * https://gitlab.com/frankiezafe/SoftSkin - origin
 * https://github.com/frankiezafe/SoftSkin - mirror
+* https://bitbucket.org/frankiezafe/softskin - hg legacy repo, [OF](http://openframeworks.cc) version
 
 ## notes
 
