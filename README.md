@@ -1,6 +1,6 @@
 # SoftSkin
 
-Soft skin library for godot engine
+Soft skin library for godot engine.
 
 ## remotes
 
