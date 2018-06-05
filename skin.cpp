@@ -43,22 +43,24 @@
 
 #include "skin.h"
 
-Skin::Skin() {
+Skin::Skin():
+	dots_num(0),
+	fibers_num(0),
+	faces_num(0),
+	dots(0),
+	fibers(0),
+	faces(0)
+{
 	
 	im = VisualServer::get_singleton()->immediate_create();
 	set_base(im);
 	
-	dots_num = 0;
-	fibers_num = 0;
-	faces_num = 0;
-	
-	dots = 0;
-	fibers = 0;
-	faces = 0;
-	
 }
 
 Skin::~Skin() {
+	
+	purge();
+	
 	
 	VisualServer::get_singleton()->free(im);
 	
@@ -68,7 +70,31 @@ Skin::~Skin() {
 	
 }
 
+void Skin::purge() {
+	
+	if ( dots != 0 ) {
+		delete [] dots;
+		dots = 0;
+	}
+	if ( fibers != 0 ) {
+		delete [] fibers;
+		fibers = 0;
+	}
+	if ( faces != 0 ) {
+		delete [] faces;
+		faces = 0;
+	}
+	dots_num = 0;
+	fibers_num = 0;
+	faces_num = 0;
+	
+	VisualServer::get_singleton()->immediate_clear(im);
+	
+}
+
 void Skin::cube() {
+	
+	purge();
 	
 	dots_num = 8;
 	fibers_num = 12 * 2;
@@ -167,6 +193,130 @@ void Skin::cube() {
 	faces[i] = 7; ++i;
 	faces[i] = 6; ++i;
 	
+	generate();
+	
+// 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks[0].vertices.size() << std::endl;
+	
+}
+
+void Skin::parse( const String& path ) {
+	
+	purge();
+
+	SkinRaw decompressed;
+	
+	_File f;
+	f.open( path, _File::READ );
+	
+	String l = f.get_line();
+	uint32_t i = 0;
+	uint32_t index = 0;
+	
+	while (!f.eof_reached()) {
+		
+		if ( l.begins_with( "++vertices++" ) ) {
+			
+			decompressed.vpass = true;
+			decompressed.epass = false;
+			decompressed.fpass = false;
+			index = 0;
+			int num = l.right( 12 ).to_int();
+			decompressed.verts.resize( num );
+			
+		} else if ( l.begins_with( "++edges++" ) ) {
+			
+			decompressed.vpass = false;
+			decompressed.epass = true;
+			decompressed.fpass = false;
+			index = 0;
+			int num = l.right( 9 ).to_int();
+			decompressed.edges.resize( num );
+			
+		} else if ( l.begins_with( "++faces++" ) ) {
+			
+			decompressed.vpass = false;
+			decompressed.epass = false;
+			decompressed.fpass = true;
+			index = 0;
+			int num = l.right( 9 ).to_int();
+			decompressed.faces.resize( num );
+			
+		} else if ( decompressed.vpass ) {
+			
+			Vector<float> vs = l.split_floats(" ");
+			if ( vs.size() >= 7 ) {
+				decompressed.verts[index] = vs; ++index;
+			} else {
+				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
+				return;
+			}
+			
+		} else if ( decompressed.epass ) {
+			
+			Vector<int> vs = l.split_ints(" ");
+			if ( vs.size() >= 3 ) {
+				decompressed.edges[index] = vs; ++index;
+			} else {
+				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
+				return;
+			}
+			
+		} else if ( decompressed.fpass ) {
+			
+			Vector<int> vs = l.split_ints(" ");
+			if ( vs.size() >= 3 ) {
+				decompressed.faces[index] = vs; ++index;
+			} else {
+				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
+				return;
+			}
+			
+		}
+		
+		l = f.get_line();
+		++i;
+	}
+	
+	f.close();
+	
+	std::cout << "decompressed.verts " << decompressed.verts.size() << std::endl;
+	std::cout << "decompressed.edges " << decompressed.edges.size() << std::endl;
+	std::cout << "decompressed.faces " << decompressed.faces.size() << std::endl;
+	
+	dots_num = decompressed.verts.size();
+	fibers_num = decompressed.edges.size();
+	faces_num = decompressed.faces.size() * 3;
+	
+	dots = new SkinDot[dots_num];
+	for( int i = 0; i < dots_num; ++i ) {
+		Vector<float>& vs = decompressed.verts[i];
+		dots[i].vert( vs[1], vs[2], vs[3] );
+		dots[i].normal( vs[4], vs[5], vs[6] );
+	}
+	
+	fibers = new SkinFiber[fibers_num];
+	for( int i = 0; i < fibers_num; ++i ) {
+		Vector<int>& vs = decompressed.edges[i];
+		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
+	}
+	
+	faces = new uint32_t[faces_num];
+	i = 0;
+	int vmax = decompressed.faces.size();
+	for( int v = 0; v < vmax; ++v ) {
+		faces[i] = decompressed.faces[v][2]; ++i;
+		faces[i] = decompressed.faces[v][1]; ++i;
+		faces[i] = decompressed.faces[v][0]; ++i;
+	}
+	
+	generate();
+	
+// 	std::cout << "Skin::parse lines: " << i << std::endl;
+	
+}
+
+void Skin::generate() {
+	
 	VisualServer::get_singleton()->immediate_begin(
 		im, 
 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
@@ -180,12 +330,11 @@ void Skin::cube() {
 		} else {
 			aabb.expand_to( vert );
 		}
+		VisualServer::get_singleton()->immediate_normal(im, dots[faces[i]].normal() );
 		VisualServer::get_singleton()->immediate_vertex(im, vert );
 	}
-		
-	VisualServer::get_singleton()->immediate_end(im);
 	
-// 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks[0].vertices.size() << std::endl;
+	VisualServer::get_singleton()->immediate_end(im);
 	
 }
 
@@ -202,8 +351,13 @@ PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
 
 void Skin::update( float delta ) {
 	
+	if ( dots == 0 ) {
+		return;
+	}
+	
 	RasterizerStorageGLES3::Immediate* imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
 	Vector<Vector3>& vs = imm->chunks[0].vertices;
+	Vector<Vector3>& ns = imm->chunks[0].normals;
 	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		dots[i].update( delta );
@@ -213,6 +367,7 @@ void Skin::update( float delta ) {
 	}
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
 		SkinDot::set_v3( vs[i], dots[faces[i]].vert() );
+		SkinDot::set_v3( ns[i], dots[faces[i]].normal() );
 	}
 	imm->instance_change_notify();
 	
@@ -221,4 +376,5 @@ void Skin::update( float delta ) {
 void Skin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("cube"), &Skin::cube);
 	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
+	ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
 }

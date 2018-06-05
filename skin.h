@@ -45,10 +45,12 @@
 #define SKIN_H
 
 #include <iostream>
+#include <vector>
 
 #include "skindot.h"
 #include "skinfiber.h"
 
+#include "core/bind/core_bind.h"
 #include "scene/3d/visual_instance.h"
 #include "scene/resources/mesh.h"
 #include "drivers/gles3/rasterizer_storage_gles3.h"
@@ -64,6 +66,8 @@ public:
 	~Skin();
 	
 	void cube();
+	
+	void parse( const String& path );
 	
 	void update( float delta );
 	
@@ -87,6 +91,21 @@ private:
 	SkinDot* dots;
 	SkinFiber* fibers;
 	uint32_t* faces;
+	
+	void purge();
+	
+	void generate();
+	
+	// decompression data
+	struct SkinRaw {
+		bool vpass;
+		bool epass;
+		bool fpass;
+		Vector< Vector<float> > verts;
+		Vector< Vector<int> > edges;
+		Vector< Vector<int> > faces;
+		SkinRaw() : vpass(false), epass(false), fpass(false) {}
+	};
 	
 };
 
