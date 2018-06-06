@@ -98,6 +98,11 @@ void Skin::generate( SkinRaw& raw ) {
 	fibers_num = raw.edges.size();
 	uint32_t faces_num = raw.faces.size();
 	
+	dots = new SkinDot[dots_num];
+	forces = new Vector3[dots_num];
+	
+	// strongly inspired by scens/resources/primitive_meshes.cpp
+	
 	materials.resize(3);
 	
 	PoolVector<Vector3> points;
@@ -108,7 +113,14 @@ void Skin::generate( SkinRaw& raw ) {
 		Vector<float>& vert = raw.verts[i];
 		points.push_back( Vector3( vert[1], vert[2], vert[3] ) );
 		normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+		dots[i].init(
+			&points.read()[i],
+			&normals.read()[i],
+			&forces[i]
+		);
+		
 	}
+	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
 		Vector<int>& fids = raw.faces[i];
 		int j = fids.size() - 1;
@@ -136,7 +148,25 @@ void Skin::generate( SkinRaw& raw ) {
 		mesh_rid, 0, 
 		materials[0].is_null() ? RID() : materials[0]->get_rid()
 	);
-		
+	
+	retrieve_object();
+	
+	fibers = new SkinFiber[fibers_num];
+	uint32_t fibid = 0;
+	// generate fibers and tensors
+	for( int i = 0; i < fibers_num; ++i, ++fibid ) {
+		Vector<int>& vs = raw.edges[i];
+		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
+		if ( vs[2] != 0 ) {
+			fibers[fibid].musclise(
+				fibers[fibid].init_rest_len() * 0.2,
+				fibers[fibid].init_rest_len() * 3.4,
+				0.1, 0
+				);
+		}
+	}
+	
+	std::cout << "Skin::generate, surfaces: " << mesh->surfaces.size() << std::endl;
 	
 // 	RID mat;
 // 	
@@ -217,7 +247,7 @@ void Skin::generate( SkinRaw& raw ) {
 // 	// all meshes created
 // 	
 // 	
-// 	retrieve_immediate();
+// 	retrieve_object();
 // 	
 // 	// data has been pushed in godot engine,
 // 	// we can now generate custom object that 
@@ -406,13 +436,13 @@ void Skin::update( const float& delta ) {
 	
 // 	if ( imm == 0 || dots == 0 ) {
 	if ( mesh == 0 || dots == 0 ) {
-		std::cout << "Skin::update, object not ready for update!" << std::endl;
+// 		std::cout << "Skin::update, object not ready for update!" << std::endl;
 		return;
 	}
 	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		
-		dots[i].update( delta );
+// 		dots[i].update( delta );
 		
 	}
 	

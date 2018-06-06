@@ -103,11 +103,11 @@ public:
 	
 	SkinDot( const float& x, const float& y, const float& z );
 	
-	SkinDot( Vector3* vert, Vector3* normal, Vector3* force );
+	SkinDot( const Vector3* vert, const Vector3* normal, const Vector3* force );
 		
 	void init( const float& x, const float& y, const float& z );
 
-	void init( Vector3* vert, Vector3* normal, Vector3* force );
+	void init( const Vector3* vert, const Vector3* normal, const Vector3* force );
 	
 	void register_vert( Vector3* vert );
 	

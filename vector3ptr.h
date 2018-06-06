@@ -56,13 +56,13 @@ public:
 	
 	Vector3ptr();
 	
-	Vector3ptr( Vector3* v3 );
+	Vector3ptr( const Vector3* v3 );
 	
 	Vector3ptr( const float& x, const float& y, const float& z );
 	
 	~Vector3ptr();
 	
-	void init( Vector3* v3 );
+	void init( const Vector3* v3 );
 		
 	void init( const float& x, const float& y, const float& z );
 	

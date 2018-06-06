@@ -56,7 +56,7 @@ SkinDot::SkinDot( const float& x, const float& y, const float& z) :
 	
 }
 
-SkinDot::SkinDot( Vector3* vert, Vector3* normal, Vector3* force ) : 
+SkinDot::SkinDot( const Vector3* vert, const Vector3* normal, const Vector3* force ) : 
 	_inititalised(false) 
 {
 	
@@ -74,7 +74,7 @@ void SkinDot::init( const float& x, const float& y, const float& z ) {
 	
 }
 
-void SkinDot::init( Vector3* vert, Vector3* normal, Vector3* force ) {
+void SkinDot::init( const Vector3* vert, const Vector3* normal, const Vector3* force ) {
 	
 	_vert.init( vert );
 	_normal.init( normal) ;

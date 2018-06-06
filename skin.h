@@ -118,7 +118,7 @@ private:
 	
 	void generate( SkinRaw& raw );
 	
-	void retrieve_immediate() {
+	void retrieve_object() {
 		
 // 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
 		mesh = (RasterizerStorageGLES3::Mesh*) mesh_rid.get_data();

@@ -51,11 +51,12 @@ Vector3ptr::Vector3ptr() :
 	_inititalised(false)
 {}
 
-Vector3ptr::Vector3ptr( Vector3* v3 ) : 
-	_v3( v3 ), 
+Vector3ptr::Vector3ptr( const Vector3* v3 ) : 
 	_local(false),
 	_inititalised(false)
-{}
+{
+	_v3 = (Vector3*) v3;
+}
 
 Vector3ptr::Vector3ptr( const float& x, const float& y, const float& z ): 
 	_local(true) ,
@@ -83,13 +84,13 @@ void Vector3ptr::purge() {
 	
 }
 
-void Vector3ptr::init( Vector3* v3 ) {
+void Vector3ptr::init( const Vector3* v3 ) {
 	
 	purge();
 	
 	if ( v3 ) {
 		_local = false;
-		_v3 = v3;
+		_v3 = (Vector3*) v3;
 		_inititalised = true;
 	}
 	
