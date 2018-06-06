@@ -69,6 +69,9 @@ void Skin::purge() {
 		delete [] dots;
 		dots = 0;
 	}
+	
+	// STD MESH ************
+	
 	if ( fibers != 0 ) {
 		delete [] fibers;
 		fibers = 0;
@@ -123,6 +126,41 @@ void Skin::generate( SkinRaw& raw ) {
 	
 	VisualServer::get_singleton()->immediate_end(im);
 	
+	
+	// DEBUG MESHES ************
+	// FIBERS ************
+	
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+		RID());
+	
+	for ( uint32_t i = 0; i < fibers_num; ++i ) {
+		Vector<int>& vs = raw.edges[i];
+		for ( uint32_t j = 0; j < 2; ++j ) {
+			Vector<float>& vert = raw.verts[vs[j]];
+			Vector3 p( vert[1], vert[2], vert[3] );
+			VisualServer::get_singleton()->immediate_vertex(im, p );
+		}
+	}
+	
+	VisualServer::get_singleton()->immediate_end(im);
+	
+	// LIGAMENTS ************
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+		RID());
+	
+	for ( uint32_t i = 0; i < dots_num; ++i ) {
+		Vector<float>& vert = raw.verts[i];
+		Vector3 p( vert[1], vert[2], vert[3] );
+		VisualServer::get_singleton()->immediate_vertex(im, p );
+		VisualServer::get_singleton()->immediate_vertex(im, p );
+	}
+	
+	VisualServer::get_singleton()->immediate_end(im);
+	
 	retrieve_immediate();
 	
 	// data has been pushed in godot engine,
@@ -163,18 +201,32 @@ void Skin::generate( SkinRaw& raw ) {
 		
 	}
 	
+	// debugging ligaments
+	Vector<Vector3>& vs_liga = imm->chunks[2].vertices;
+	for ( uint32_t i = 0; i < dots_num; ++i ) {
+		dots[i].register_vert( &vs_liga[(i*2)+1] );
+	}
+	
+	fibers = new SkinFiber[fibers_num + dots_num];
+	uint32_t fibid = 0;
+	
 	fibers = new SkinFiber[fibers_num];
 	for( int i = 0; i < fibers_num; ++i ) {
 		Vector<int>& vs = raw.edges[i];
-		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
+		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
 		if ( vs[2] != 0 ) {
-			fibers[i].musclise(
-				fibers[i].init_rest_len() * 0.2,
-				fibers[i].init_rest_len() * 1.4,
+			fibers[fibid].musclise(
+				fibers[fibid].init_rest_len() * 0.2,
+				fibers[fibid].init_rest_len() * 1.4,
 				0.5, 0
 				);
 		}
 	}
+	// generate ligaments
+	for( int i = 0; i < dots_num; ++i, ++fibid ) {
+		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
+	}
+	
 		
 }
 

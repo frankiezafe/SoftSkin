@@ -48,26 +48,51 @@
 #include "skindot.h"
 
 class SkinFiber {
-
+	
 public:
+	
+	enum skin_fiber_t {
+		
+		sf_UNDEFINED, 	// type before assignation
+		sf_FIBER, 		// a fiber connecting 2 skindots, passive behaviour
+		sf_TENSOR, 		// a fiber connecting 2 skindots, able to contract
+		sf_LIGAMENT,	// a fiber connecting 1 skindots to a fixed 3d position, passive behaviour
+		sf_MUSCLE		// a fiber connecting 1 skindots to a fixed 3d position, able to contract
+		
+	};
 	
 	SkinFiber();
 	
-	void init(SkinDot* a, SkinDot* b);
+	/* 
+	 * Initialisation of a sf_FIBER or a sf_TENSOR 
+	 */
+	bool init( SkinDot* a, SkinDot* b );
 	
-	void init(SkinDot* a, SkinDot* b, float len);
 	
-	void muscle(bool enable);
+	/* 
+	 * Initialisation of a sf_FIBER or a sf_TENSOR
+	 * @param len: arbritrary rest length for the fiber
+	 */
+	bool init( SkinDot* a, SkinDot* b, float len );
 	
-	void musclise(float min, float max, float freq = 1, float shift = 0);
+	/* 
+	 * Initialisation of a sf_LIGAMENT or a sf_MUSCLE 
+	 */
+	bool init( Vector3* a, SkinDot* b );
+	
+	bool muscle( bool enable );
+	
+	bool musclise( float min, float max, float freq = 1, float shift = 0 );
 	
 	void update( const float& delta_time );
 	
 	// getters
 	
-	SkinDot*& a();
+	SkinDot*& head_dot();
 	
-	SkinDot*& b();
+	Vector3*& head_vec3();
+	
+	SkinDot*& tail();
 	
 	const Vector3& dir() const;
 	
@@ -79,28 +104,42 @@ public:
 	
 	const float& rest_len() const;
 	
+	const float& rest_len_multiplier() const;
+	
+	const float& stiffness() const;
+	
 	const bool& muscle() const;
 	
 	// setters
 	
-	void rest_len(const float& l);
+	void rest_len( const float& l );
 	
-	void muscle_min_max(float min, float max);
+	void rest_len_multiplier( const float& m );
 	
-	void muscle_freq(float f);
+	void stiffness( const float& s );
 	
-	void muscle_phase_shift(float shift);
+	void muscle_min_max( float min, float max );
+	
+	void muscle_freq( float f );
+	
+	void muscle_phase_shift( float shift );
 	
 private:
 	
-	SkinDot* _a;
-	SkinDot* _b;
+	SkinDot* _head_dot;
+	Vector3* _head_vec3;
+	SkinDot* _tail;
+	
+	skin_fiber_t _type;
 	
 	Vector3 _dir;
 	Vector3 _middle;
 	float _current_len;
 	float _rest_len;
+	float _rest_len_multiplier;
 	float _init_rest_len;
+	
+	float _stiffness;
 	
 	bool _muscled;
 	float _muscle_min_len;
@@ -110,7 +149,8 @@ private:
 	float _muscle_phase_shift;
 	float _muscle_frequency;
 	
-	void update_muscle(float delta_time);
+	void update_muscle( float delta_time );
+	void update_fiber( const Vector3& av, const Vector3& bv );
 	
 };
 
