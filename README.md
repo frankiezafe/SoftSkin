@@ -18,7 +18,15 @@ First prototype demo (openframeworks):
 
 ## notes
 
+
+### 06/06/2018
+
+after serveral hours of engine hell:
+
 * investigate CSG module > Immediate geometries have no shadows and Mesh can not be updated...
+* transform Skin object into Geometries manager -> enabling several meshes (debug views, wireframe + tri mesh)
+
+### 03/06/2018
 
 * main object should inherits [GeometryInstance](http://docs.godotengine.org/en/3.0/classes/class_geometryinstance.html#class-geometryinstance) instead of [ImmediateGeometry](http://docs.godotengine.org/en/3.0/classes/class_immediategeometry.html#class-immediategeometry) with a fixed memory allocation - data managed by SkinDot especially should be pointers on arrays of floats, in a glBufferData for instance (if working) -> saving process and memory
 * using glBufferData for better performance https://stackoverflow.com/questions/14155615/opengl-updating-vertex-buffer-with-glbufferdata#14156027
