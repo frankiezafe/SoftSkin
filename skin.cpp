@@ -101,6 +101,8 @@ void Skin::generate( SkinRaw& raw ) {
 		RID());
 	
 	mat = VisualServer::get_singleton()->material_create();
+	// see scenes/resources/material.cpp, line 230
+	VisualServer::get_singleton()->material_set_param( mat, "albedo", Color(1,0,0,1) );
 	VisualServer::get_singleton()->immediate_set_material( im, mat );
 	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
@@ -139,8 +141,8 @@ void Skin::generate( SkinRaw& raw ) {
 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
 		RID());
 	
-	mat = VisualServer::get_singleton()->material_create();
-	VisualServer::get_singleton()->immediate_set_material( im, mat );
+// 	mat = VisualServer::get_singleton()->material_create();
+// 	VisualServer::get_singleton()->immediate_set_material( im, mat );
 	
 	for ( uint32_t i = 0; i < fibers_num; ++i ) {
 		Vector<int>& vs = raw.edges[i];
@@ -159,8 +161,8 @@ void Skin::generate( SkinRaw& raw ) {
 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
 		RID());
 	
-	mat = VisualServer::get_singleton()->material_create();
-	VisualServer::get_singleton()->immediate_set_material( im, mat );
+// 	mat = VisualServer::get_singleton()->material_create();
+// 	VisualServer::get_singleton()->immediate_set_material( im, mat );
 	
 	for ( uint32_t i = 0; i < dots_num; ++i ) {
 		Vector<float>& vert = raw.verts[i];
@@ -243,13 +245,7 @@ void Skin::generate( SkinRaw& raw ) {
 	}
 	
 	materials.resize( imm->chunks.size() );
-	
-	std::cout << "MATERIAL " <<
-	materials.size() << " / " << 
-	VisualServer::get_singleton()->immediate_get_material(im).get_id() << " / " <<
-	VisualServer::get_singleton()->immediate_get_material(im).get_data() <<
-	std::endl;
-	
+
 }
 
 void Skin::parse( const String& path ) {
@@ -389,7 +385,7 @@ void Skin::update( const float& delta ) {
 }
 
 void Skin::set_surface_material(int p_surface, const Ref<Material> &p_material) {
-	
+		
 	ERR_FAIL_INDEX(p_surface, materials.size());
 	
 	materials[p_surface] = p_material;
