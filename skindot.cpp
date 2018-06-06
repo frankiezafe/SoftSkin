@@ -45,27 +45,73 @@
 #include "skindot.h"
 
 SkinDot::SkinDot() {
-	set_v3( _vert, 0,0,0 );
-	set_v3( _force, 0,0,0 );
-	set_v3( _normal, 0,0,0 );
-	_damping = 1;
-	_kicks = 0;
+	
 }
 
-SkinDot::SkinDot(float x, float y, float z) {
-	set_v3( _vert, x, y, z );
-	set_v3( _force, 0,0,0 );
-	set_v3( _normal, 0,0,0 );
-	_damping = 1;
-	_kicks = 0;
+SkinDot::SkinDot( const float& x, const float& y, const float& z) {
+	
+	init( x,y,z );
+	
 }
 
-SkinDot::SkinDot( const SkinDot& src ) {
-	set_v3( _vert, src._vert );
-	set_v3( _force, src._force );
-	set_v3( _normal, src._normal );
-	_damping = src._damping;
-	_kicks = src._kicks;
+SkinDot::SkinDot( Vector3* vert, Vector3* normal, Vector3* force ) {
+	
+	init( vert, normal, force );
+	
+}
+
+
+void SkinDot::init( const float& x, const float& y, const float& z ) {	
+	
+	_vert.init( x,y,z );
+	_normal.init( 0,0,0 );
+	_force.init( 0,0,0 );
+	init_internal();
+	
+}
+
+void SkinDot::init( Vector3* vert, Vector3* normal, Vector3* force ) {
+	
+	_vert.init( vert );
+	_normal.init( normal) ;
+	_force.init( force );
+	init_internal();
+	
+}
+
+void SkinDot::init_internal() {
+	
+	_damping = 1;
+	_kicks = 0;
+	
+	mirror_verts.src = *_vert;
+	mirror_normals.src = *_normal;
+	mirror_forces.src = *_force;
+	
+}
+
+void SkinDot::register_vert( Vector3* vert ) {
+	
+	assert( is_initialised() );
+	
+	mirror_verts.add( vert );
+	
+}
+
+void SkinDot::register_normal( Vector3* normal ) {
+	
+	assert( is_initialised() );
+	
+	mirror_normals.add( normal );
+	
+}
+
+void SkinDot::register_force( Vector3* force ) {
+	
+	assert( is_initialised() );
+	
+	mirror_forces.add( force );
+	
 }
 
 void SkinDot::push(const Vector3& f) {
@@ -73,15 +119,15 @@ void SkinDot::push(const Vector3& f) {
 	_kicks++;
 }
 
-const Vector3& SkinDot::vert() const {
+const Vector3ptr& SkinDot::vert() const {
 	return _vert;
 }
 
-const Vector3& SkinDot::force() const {
+const Vector3ptr& SkinDot::force() const {
 	return _force;
 }
 
-const Vector3& SkinDot::normal() const {
+const Vector3ptr& SkinDot::normal() const {
 	return _normal;
 }
 
@@ -93,36 +139,26 @@ const float& SkinDot::kicks() const {
 	return _kicks;
 }
 
-void SkinDot::vert( float x, float y, float z ) {
-	set_v3( _vert, x, y, z );
+void SkinDot::vert( const float& x, const float& y, const float& z ) {
+	_vert.set( x, y, z );
 }
 
-void SkinDot::normal( float x, float y, float z ) {
-	set_v3( _normal, x, y, z );
+void SkinDot::normal( const float& x, const float& y, const float& z ) {
+	_normal.set( x, y, z );
 }
 
-void SkinDot::damping( float d ) {
+void SkinDot::damping( const float& d ) {
 	_damping = d;
 }
 
 void SkinDot::operator = ( const SkinDot& src ) {
-	set_v3( _vert, src.vert() );
-	set_v3( _force, src.force() );
-	set_v3( _normal, src.normal() );
+	
+	_vert = src.vert();
+	_normal = src.normal();
+	_force = src.force();
 	_damping = src.damping();
 	_kicks = src.kicks();
-}
-
-void SkinDot::set_v3( Vector3& v3, const float x, const float y, const float z ) {
-	v3.x = x;
-	v3.y = y;
-	v3.z = z;
-}
-
-void SkinDot::set_v3( Vector3& v3, const Vector3& src ) {
-	v3.x = src.x;
-	v3.y = src.y;
-	v3.z = src.z;
+	
 }
 
 // void SkinDot::_bind_methods() {
@@ -131,16 +167,24 @@ void SkinDot::set_v3( Vector3& v3, const Vector3& src ) {
 
 void SkinDot::update(float delta_time) {
 	
-	if (_kicks < 2) {
+	if (_kicks = 0 ) {
+		
+		return;
+		
+	} else if (_kicks < 2) {
+		
 		_kicks = 2;
+		
 	};
 		
-	Vector3 consumed = _force * _damping / sqrt(_kicks - 1);
+	Vector3 consumed = _force.ref() * _damping / sqrt(_kicks - 1);
 	_force -= consumed;
 	_vert += consumed;
-	_vert += _normal * delta_time * 0.1;
-	//        (*this) += _force * ( _damping / sqrt( _kicks ) );
-	//        _force.set(0,0,0);
+	_vert += _normal.ref() * delta_time * 0.1;
 	_kicks = 0;
+	
+	mirror_verts.sync();
+	mirror_normals.sync();
+	mirror_forces.sync();
 	
 }

@@ -1,5 +1,5 @@
 /*
- * 
+ *  
  *  
  *  _________ ____  .-. _________/ ____ .-. ____ 
  *  __|__  (_)_/(_)(   )____<    \|    (   )  (_)
@@ -36,82 +36,75 @@
  *  THE SOFTWARE.
  *  
  *  ___________________________________( ^3^)_____________________________________
- *  []
+ *  
  *  ascii font: rotated by MikeChat & myflix
  *  have fun and be cool :)
+ *  
+ * 
  */
 
-#ifndef SKIN_H
-#define SKIN_H
+#ifndef VECTOR3PTR_H
+#define VECTOR3PTR_H
 
-#include <iostream>
-#include <vector>
+#include "vector3.h"
+#include <assert.h>
 
-#include "skindot.h"
-#include "skinfiber.h"
-
-#include "core/bind/core_bind.h"
-#include "scene/3d/visual_instance.h"
-#include "scene/resources/mesh.h"
-#include "drivers/gles3/rasterizer_storage_gles3.h"
-
-class Skin: public GeometryInstance {
-	
-	GDCLASS(Skin, GeometryInstance);
-	
-	// decompression data
-	struct SkinRaw {
-		bool vpass;
-		bool epass;
-		bool fpass;
-		Vector< Vector<float> > verts;
-		Vector< Vector<int> > edges;
-		Vector< Vector<int> > faces;
-		SkinRaw() : vpass(false), epass(false), fpass(false) {}
-	};
+class Vector3ptr
+{
 	
 public:
 	
-	Skin();
+	Vector3ptr();
 	
-	~Skin();
+	Vector3ptr( Vector3* v3 );
 	
-	void cube();
+	Vector3ptr( const float& x, const float& y, const float& z );
 	
-	void parse( const String& path );
+	~Vector3ptr();
 	
-	void update( float delta );
+	void init( Vector3* v3 );
+		
+	void init( const float& x, const float& y, const float& z );
 	
-	// mandatory methods for GeometryInstance
+	void set( const float& x, const float& y, const float& z );
 	
-	virtual AABB get_aabb() const;
+	// operators
 	
-	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
+	void operator = ( const Vector3& v3 );
 	
+	void operator = ( const Vector3ptr& v3ptr );
+	
+	void operator += ( const Vector3& v3 );
+	
+	void operator -= ( const Vector3& v3 );
+	
+	const float& operator [] ( const uint8_t& i ) const;
+	
+	void operator >> ( Vector3* v3 ) const;
+	
+	Vector3* ptr() const {
+		return _v3;
+	}
+	
+	Vector3& ref() const {
+		return (*_v3);
+	}
+	
+	bool is_initialised() const {
+		return _v3 != 0;
+	}
+	
+	bool is_local() const {
+		return _local;
+	}
+
 protected:
 	
-	static void _bind_methods();
-	
-	AABB aabb;
-	
-private:
-	
-	RID im;
-	RasterizerStorageGLES3::Immediate* imm;
-	
-	uint32_t dots_num;
-	uint32_t fibers_num;
-	uint32_t faces_num;
-	SkinDot* dots;
-	SkinFiber* fibers;
-	uint32_t* faces;
+	Vector3* _v3;
+	bool _local;
 	
 	void purge();
 	
-	void generate_im( SkinRaw& raw );
-	
-// 	void generate();
-	
 };
 
-#endif // SKIN_H
+#endif // VECTOR3PTR_H

@@ -48,50 +48,105 @@
 
 #include <iostream>
 #include <ostream>
+#include <vector>
 #include "vector3.h"
+#include "vector3ptr.h"
 
 class SkinDot {
 	
+	// decompression data
+	struct SkinDotMirror {
+		
+		bool empty;
+		Vector3ptr* src;
+		std::vector< Vector3* > vec3s;
+		std::vector< Vector3* >::iterator vec3s_end;
+		
+		SkinDotMirror() : empty(true), src(0) {}
+		
+		bool is_enabled() const { src != 0; }
+		
+		void add( Vector3* v ) {
+			
+			assert( is_enabled() );
+			
+			vec3s.push_back( v );
+			vec3s_end = vec3s.end();
+			empty = false;
+			
+		}
+		
+		void sync() {
+			
+			assert( is_enabled() );
+			
+			if ( empty ) {
+				return;
+			}
+			
+			std::vector< Vector3* >::iterator it = vec3s.begin();
+			for( ; it < vec3s_end; ++it ) {
+				(*src) >> (*it);
+			}
+			
+		}
+		
+	};
+	
 public:
 	
+	// do not forget to initialised after calling this constructor!!
 	SkinDot();
 	
-	SkinDot(float x, float y, float z);
+	SkinDot( const float& x, const float& y, const float& z );
 	
-	SkinDot( const SkinDot& src );
+	SkinDot( Vector3* vert, Vector3* normal, Vector3* force );
+		
+	void init( const float& x, const float& y, const float& z );
+
+	void init( Vector3* vert, Vector3* normal, Vector3* force );
 	
-	void push(const Vector3& f);
+	void register_vert( Vector3* vert );
 	
-	const Vector3& vert() const;
+	void register_normal( Vector3* normal );
 	
-	const Vector3& force() const;
+	void register_force( Vector3* force );
 	
-	const Vector3& normal() const;
+	void push( const Vector3& f );
+	
+	const Vector3ptr& vert() const;
+	
+	const Vector3ptr& force() const;
+	
+	const Vector3ptr& normal() const;
 	
 	const float& damping() const;
 	
 	const float& kicks() const;
 	
-	void vert( float x, float y, float z );
+	void vert( const float& x, const float& y, const float& z );
 	
-	void normal( float x, float y, float z );
+	void normal( const float& x, const float& y, const float& z );
 	
-	void damping( float d );
+	void damping( const float& d );
 	
-	void update(float delta_time);
+	void update( const float& delta_time );
+	
+	bool is_initialised() const {
+		return 
+			_vert.is_initialised() &&
+			_normal.is_initialised() &&
+			_force.is_initialised();
+	}
 	
 	void operator = ( const SkinDot& src );
 	
 	friend std::ostream &operator<<(std::ostream &os, SkinDot const &sd) { 
 		return os << 
-			sd.vert().x << ", " <<
-			sd.vert().y << ", " <<
-			sd.vert().z;
+			sd.vert()[0] << ", " <<
+			sd.vert()[0] << ", " <<
+			sd.vert()[0];
 	}
-	
-	static void set_v3( Vector3& v3, const float x, const float y, const float z );
-	
-	static void set_v3( Vector3& v3, const Vector3& src );
 	
 protected:
 
@@ -99,11 +154,17 @@ protected:
 	
 private:
 		
-	Vector3 _vert;
-	Vector3 _force;
-	Vector3 _normal;
+	Vector3ptr _vert;
+	Vector3ptr _normal;
+	Vector3ptr _force;
 	float _damping;
 	uint16_t _kicks;
+	
+	SkinDotMirror mirror_verts;
+	SkinDotMirror mirror_normals;
+	SkinDotMirror mirror_forces;
+	
+	void init_internal();
 	
 };
 

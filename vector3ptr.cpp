@@ -1,5 +1,5 @@
 /*
- * 
+ *  
  *  
  *  _________ ____  .-. _________/ ____ .-. ____ 
  *  __|__  (_)_/(_)(   )____<    \|    (   )  (_)
@@ -36,82 +36,121 @@
  *  THE SOFTWARE.
  *  
  *  ___________________________________( ^3^)_____________________________________
- *  []
+ *  
  *  ascii font: rotated by MikeChat & myflix
  *  have fun and be cool :)
+ *  
+ * 
  */
 
-#ifndef SKIN_H
-#define SKIN_H
+#include "vector3ptr.h"
 
-#include <iostream>
-#include <vector>
+Vector3ptr::Vector3ptr() : 
+	_v3( 0 ), 
+	_local(false) 
+{}
 
-#include "skindot.h"
-#include "skinfiber.h"
+Vector3ptr::Vector3ptr( Vector3* v3 ) : 
+	_v3( v3 ), 
+	_local(false)
+{}
 
-#include "core/bind/core_bind.h"
-#include "scene/3d/visual_instance.h"
-#include "scene/resources/mesh.h"
-#include "drivers/gles3/rasterizer_storage_gles3.h"
+Vector3ptr::Vector3ptr( const float& x, const float& y, const float& z ): 
+	_local(true) 
+{
+	_v3 = new Vector3( x,y,z );
+}
 
-class Skin: public GeometryInstance {
-	
-	GDCLASS(Skin, GeometryInstance);
-	
-	// decompression data
-	struct SkinRaw {
-		bool vpass;
-		bool epass;
-		bool fpass;
-		Vector< Vector<float> > verts;
-		Vector< Vector<int> > edges;
-		Vector< Vector<int> > faces;
-		SkinRaw() : vpass(false), epass(false), fpass(false) {}
-	};
-	
-public:
-	
-	Skin();
-	
-	~Skin();
-	
-	void cube();
-	
-	void parse( const String& path );
-	
-	void update( float delta );
-	
-	// mandatory methods for GeometryInstance
-	
-	virtual AABB get_aabb() const;
-	
-	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
-	
-protected:
-	
-	static void _bind_methods();
-	
-	AABB aabb;
-	
-private:
-	
-	RID im;
-	RasterizerStorageGLES3::Immediate* imm;
-	
-	uint32_t dots_num;
-	uint32_t fibers_num;
-	uint32_t faces_num;
-	SkinDot* dots;
-	SkinFiber* fibers;
-	uint32_t* faces;
-	
-	void purge();
-	
-	void generate_im( SkinRaw& raw );
-	
-// 	void generate();
-	
-};
+Vector3ptr::~Vector3ptr() {
+	purge();
+}
 
-#endif // SKIN_H
+void Vector3ptr::purge() {
+	if ( _local ) {
+		delete _v3;
+		_v3 = 0;
+		_local = false;
+	}
+}
+
+void Vector3ptr::init( Vector3* v3 ) {
+	purge();
+	_local = false;
+	_v3 = v3;
+}
+
+void Vector3ptr::init( const float& x, const float& y, const float& z ) {
+	purge();
+	_local = true;
+	_v3 = new Vector3( x,y,z );
+}
+
+void Vector3ptr::set( const float& x, const float& y, const float& z ) {
+	
+	assert(!_v3);
+	
+	_v3->x = x;
+	_v3->y = y;
+	_v3->z = z;
+	
+}
+
+void Vector3ptr::operator = ( const Vector3& v3 ) {
+	
+	assert(!_v3);
+	
+	_v3->x = v3.x;
+	_v3->y = v3.y;
+	_v3->z = v3.z;
+	
+}
+
+void Vector3ptr::operator = ( const Vector3ptr& v3ptr ) {
+	
+	assert(!_v3);
+	assert(!v3ptr.ptr());
+	
+	_v3->x = v3ptr.ptr()->x;
+	_v3->y = v3ptr.ptr()->y;
+	_v3->z = v3ptr.ptr()->z;
+	
+}
+
+void Vector3ptr::operator += (const Vector3& v3 ) {
+	
+	assert(!_v3);
+	
+	_v3->x += v3.x;
+	_v3->y += v3.y;
+	_v3->z += v3.z;
+	
+}
+
+void Vector3ptr::operator -= (const Vector3& v3 ) {
+	
+	assert(!_v3);
+	
+	_v3->x -= v3.x;
+	_v3->y -= v3.y;
+	_v3->z -= v3.z;
+	
+}
+
+const float& Vector3ptr::operator [] ( const uint8_t& i ) const {
+	
+	assert(!_v3);
+	assert(i>2);
+	
+	return (*_v3)[i];
+	
+}
+
+void Vector3ptr::operator >> ( Vector3* v3 ) const {
+	
+	assert(!_v3);
+	
+	v3->x = _v3->x;
+	v3->y = _v3->y;
+	v3->z = _v3->z;
+	
+}
