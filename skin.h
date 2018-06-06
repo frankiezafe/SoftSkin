@@ -41,6 +41,7 @@
  *  have fun and be cool :)
  */
 
+
 #ifndef SKIN_H
 #define SKIN_H
 
@@ -51,9 +52,12 @@
 #include "skinfiber.h"
 
 #include "core/bind/core_bind.h"
+#include "scene/resources/mesh.h"
+#include "scene/3d/visual_instance.h"
+#include "drivers/gles3/rasterizer_storage_gles3.h"
+
 #include "scene/3d/visual_instance.h"
 #include "scene/resources/mesh.h"
-#include "drivers/gles3/rasterizer_storage_gles3.h"
 
 class Skin: public GeometryInstance {
 	
@@ -88,6 +92,10 @@ public:
 	
 	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
 	
+	// surface material
+	
+	void set_surface_material(int p_surface, const Ref<Material> &p_material);
+		
 protected:
 	
 	static void _bind_methods();
@@ -114,6 +122,8 @@ private:
 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
 		
 	}
+	
+	Vector< Ref< Material > > materials;
 	
 };
 

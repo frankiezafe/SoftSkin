@@ -44,18 +44,29 @@
 
 #include "skinfiber.h"
 
-SkinFiber::SkinFiber() {
-	_a = 0;
-	_b = 0;
-	_rest_len = 0;
-}
+SkinFiber::SkinFiber():
+	_head_dot(0),
+	_head_vec3(0),
+	_tail(0),
+	_type(sf_UNDEFINED),
+	_rest_len(0),
+	_rest_len_multiplier(1),
+	_init_rest_len(0),
+	_stiffness(1)
+{}
 
-void SkinFiber::init(SkinDot* a, SkinDot* b) {
-	_a = a;
-	_b = b;	
+bool SkinFiber::init( SkinDot* a, SkinDot* b ) {
 	
-	const Vector3& av = _a->vert().ref();
-	const Vector3& bv = _b->vert().ref();
+	if ( _type != sf_UNDEFINED ) {
+		std::cout << "SkinFiber::init, this object is already initialised" << std::endl;
+		return false;
+	}
+	
+	_head_dot = a;
+	_tail = b;	
+	
+	const Vector3& av = _head_dot->vert().ref();
+	const Vector3& bv = _tail->vert().ref();
 	
 	_rest_len = av.distance_to(bv);
 	_init_rest_len = _rest_len;
@@ -66,126 +77,271 @@ void SkinFiber::init(SkinDot* a, SkinDot* b) {
 	muscle_min_max(0, _init_rest_len);
 	muscle_freq(1);
 	muscle_phase_shift(0);
+	
+	_type = sf_FIBER;
+	
+	return true;
+	
 }
 
-void SkinFiber::init(SkinDot* a, SkinDot* b, float len) {
-	init(a, b);
+bool SkinFiber::init( SkinDot* a, SkinDot* b, float len ) {
+	
+	if ( !init(a, b) ) {
+		return false;
+	}
+	
 	_rest_len = len;
 	_init_rest_len = len;
 	muscle_min_max(0, _init_rest_len);
+	
+	return true;
+	
 }
 
-void SkinFiber::muscle(bool enable) {
+bool SkinFiber::init( Vector3* a, SkinDot* b ) {
+	
+	if ( _type != sf_UNDEFINED ) {
+		std::cout << "SkinFiber::init, this object is already initialised" << std::endl;
+		return false;
+	}
+	
+	_head_vec3 = a;
+	_tail = b;	
+	
+	const Vector3& av = (*_head_vec3);
+	const Vector3& bv = _tail->vert().ref();
+	
+	_rest_len = av.distance_to(bv);
+	_init_rest_len = _rest_len;
+	_dir = ((av)-(bv)).normalized();
+	_middle = av + _dir * _rest_len * 0.5;
+	_muscled = false;
+	
+	muscle_min_max(0, _init_rest_len);
+	muscle_freq(1);
+	muscle_phase_shift(0);
+	
+	_type = sf_LIGAMENT;
+	
+	return true;
+	
+}
+
+bool SkinFiber::muscle( bool enable ) {
+	
+	if ( 
+		( enable && ( _type != sf_FIBER && _type != sf_LIGAMENT ) ) ||
+		( !enable && ( _type != sf_TENSOR && _type != sf_MUSCLE ) )
+	) {
+		std::cout << "SkinFiber::muscle, muscle can not be set to " << enable << std::endl;
+		return false;
+	}
+	
 	_muscled = enable;
+	
+	if ( _type == sf_FIBER ) {
+		
+		_type = sf_TENSOR;
+		
+	} else if ( _type == sf_LIGAMENT ) {
+		
+		_type = sf_MUSCLE;
+		
+	}
+	
+	return true;
+	
 }
 
-void SkinFiber::musclise(float min, float max, float freq, float shift) {
+bool SkinFiber::musclise( float min, float max, float freq, float shift ) {
+	
+	if ( !muscle( true ) ) {
+		return false;
+	}
+	
 	_muscle_a = 0;
 	_muscled = true;
 	muscle_min_max(min, max);
 	muscle_freq(freq);
 	muscle_phase_shift(shift);
+	
+	return true;
+	
 }
 
 void SkinFiber::update( const float& delta_time ) {
 	
-	if (!_a || !_b) return;
+	if ( _type == sf_UNDEFINED ) {
+		return;
+	}
 	
 	if (_muscled) {
 		update_muscle(delta_time);
 	}
 	
-	const Vector3& av = _a->vert().ref();
-	const Vector3& bv = _b->vert().ref();
+	switch( _type ) {
+		
+		case sf_FIBER:
+		case sf_TENSOR:
+			update_fiber( 
+				_head_dot->vert().ref(),
+				_tail->vert().ref()
+			);
+			break;
+			
+		case sf_LIGAMENT:
+		case sf_MUSCLE:
+			update_fiber( 
+				(*_head_vec3),
+				_tail->vert().ref()
+			);
+			break;
+		
+		default:
+			break;
+		
+	}
+	
+}
+
+void SkinFiber::update_fiber( const Vector3& av, const Vector3& bv ) {
 	
 	_dir = bv - av;
 	_current_len = _dir.length();
 	
-	float dl = _current_len - _rest_len;
+	float dl = _current_len - ( _rest_len * _rest_len_multiplier );
 	_dir.normalize();
 	
-	Vector3 d = _dir;
-	d *= dl * 0.5;
-	_a->push(d);
-	_b->push(-d);
+	Vector3 d = _dir * dl * _stiffness;
+	
+	switch( _type ) {
+		
+		case sf_FIBER:
+		case sf_TENSOR:
+			d *= 0.5;
+			_head_dot->push(d);
+			break;
+			
+		default:
+			break;
+			
+	}
+	
+	_tail->push(-d);
 	
 	_middle = av + _dir * _current_len * 0.5;
 	
 }
 
-// drawing
-
-// void SkinFiber::gl_current_line() {
-// 	if (!_a || !_b) return;
-// 	glVertex3f(_a->x, _a->y, _a->z);
-// 	glVertex3f(_b->x, _b->y, _b->z);
-// }
-// 
-// void SkinFiber::gl_rest_line() {
-// 	if (!_a || !_b) return;
-// 	Vector3 ta = _middle - _dir * _rest_len * 0.5;
-// 	Vector3 tb = _middle + _dir * _rest_len * 0.5;
-// 	glVertex3f(ta.x, ta.y, ta.z);
-// 	glVertex3f(tb.x, tb.y, tb.z);
-// }
-
-// getters
-
-SkinDot*& SkinFiber::a() {
-	return _a;
+SkinDot*& SkinFiber::head_dot() {
+	
+	return _head_dot;
+	
 }
 
-SkinDot*& SkinFiber::b() {
-	return _b;
+Vector3*& SkinFiber::head_vec3() {
+	
+	return _head_vec3;
+	
+}
+
+SkinDot*& SkinFiber::tail() {
+	
+	return _tail;
+	
 }
 
 const Vector3& SkinFiber::dir() const {
+	
 	return _dir;
+	
 }
 
 const Vector3& SkinFiber::middle() const {
+	
 	return _middle;
+	
 }
 
 const float& SkinFiber::init_rest_len() const {
+	
 	return _init_rest_len;
+	
 }
 
 const float& SkinFiber::current_len() const {
+	
 	return _current_len;
+	
 }
 
 const float& SkinFiber::rest_len() const {
+	
 	return _rest_len;
+	
+}
+
+const float& SkinFiber::rest_len_multiplier() const {
+	
+	return _rest_len_multiplier;
+	
+}
+
+const float& SkinFiber::stiffness() const {
+	
+	return _stiffness;
+	
 }
 
 const bool& SkinFiber::muscle() const {
+	
 	return _muscled;
+	
 }
 
-// setters
-
 void SkinFiber::rest_len(const float& l) {
+	
 	_rest_len = l;
+	
+}
+
+void SkinFiber::rest_len_multiplier(const float& l) {
+	
+	_rest_len_multiplier = l;
+	
+}
+
+void SkinFiber::stiffness(const float& s) {
+	
+	_stiffness = s;
+	
 }
 
 void SkinFiber::muscle_min_max(float min, float max) {
+	
 	_muscle_delta_len = (max - min) * 0.5;
 	_muscle_min_len = min + _muscle_delta_len;
 	_muscle_max_len = max;
+	
 }
 
 void SkinFiber::muscle_freq(float f) {
+	
 	_muscle_frequency = f;
+	
 }
 
 void SkinFiber::muscle_phase_shift(float shift) {
+	
 	_muscle_phase_shift = shift;
+	
 }
 
 void SkinFiber::update_muscle(float delta_time) {
+	
 	_muscle_a += delta_time * Math_TAU * 2 * _muscle_frequency;
 	_rest_len = _muscle_min_len +
 	sin(_muscle_phase_shift + _muscle_a) *
 	_muscle_delta_len;
+	
 }

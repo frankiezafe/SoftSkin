@@ -51,7 +51,7 @@ Skin::Skin():
 	fibers(0),
 	forces(0)
 {
-	
+		
 	im = VisualServer::get_singleton()->immediate_create();
 	set_base(im);
 	
@@ -91,10 +91,17 @@ void Skin::generate( SkinRaw& raw ) {
 	fibers_num = raw.edges.size();
 	uint32_t faces_num = raw.faces.size();
 	
+	RID mat;
+	
+	// STD MESH ************
+	
 	VisualServer::get_singleton()->immediate_begin(
 		im, 
 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
 		RID());
+	
+	mat = VisualServer::get_singleton()->material_create();
+	VisualServer::get_singleton()->immediate_set_material( im, mat );
 	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
 		
@@ -122,6 +129,50 @@ void Skin::generate( SkinRaw& raw ) {
 	}
 	
 	VisualServer::get_singleton()->immediate_end(im);
+	
+	
+	// DEBUG MESHES ************
+	// FIBERS ************
+	
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+		RID());
+	
+	mat = VisualServer::get_singleton()->material_create();
+	VisualServer::get_singleton()->immediate_set_material( im, mat );
+	
+	for ( uint32_t i = 0; i < fibers_num; ++i ) {
+		Vector<int>& vs = raw.edges[i];
+		for ( uint32_t j = 0; j < 2; ++j ) {
+			Vector<float>& vert = raw.verts[vs[j]];
+			Vector3 p( vert[1], vert[2], vert[3] );
+			VisualServer::get_singleton()->immediate_vertex(im, p );
+		}
+	}
+	
+	VisualServer::get_singleton()->immediate_end(im);
+	
+	// LIGAMENTS ************
+	VisualServer::get_singleton()->immediate_begin(
+		im, 
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+		RID());
+	
+	mat = VisualServer::get_singleton()->material_create();
+	VisualServer::get_singleton()->immediate_set_material( im, mat );
+	
+	for ( uint32_t i = 0; i < dots_num; ++i ) {
+		Vector<float>& vert = raw.verts[i];
+		Vector3 p( vert[1], vert[2], vert[3] );
+		VisualServer::get_singleton()->immediate_vertex(im, p );
+		VisualServer::get_singleton()->immediate_vertex(im, p );
+	}
+	
+	VisualServer::get_singleton()->immediate_end(im);
+	
+	// all meshes created
+	
 	
 	retrieve_immediate();
 	
@@ -151,6 +202,7 @@ void Skin::generate( SkinRaw& raw ) {
 					&ns[fvs],
 					&forces[id]
 				);
+				sd.damping( 0.1 );
 			} else {
 				sd.register_vert( &vs[fvs] );
 				sd.register_normal( &ns[fvs] );
@@ -163,19 +215,41 @@ void Skin::generate( SkinRaw& raw ) {
 		
 	}
 	
-	fibers = new SkinFiber[fibers_num];
-	for( int i = 0; i < fibers_num; ++i ) {
+	// debugging ligaments
+	Vector<Vector3>& vs_liga = imm->chunks[2].vertices;
+	for ( uint32_t i = 0; i < dots_num; ++i ) {
+		dots[i].register_vert( &vs_liga[(i*2)+1] );
+	}
+	
+	fibers = new SkinFiber[fibers_num + dots_num];
+	uint32_t fibid = 0;
+	
+	// generate fibers and tensors
+	for( int i = 0; i < fibers_num; ++i, ++fibid ) {
 		Vector<int>& vs = raw.edges[i];
-		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
+		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
 		if ( vs[2] != 0 ) {
-			fibers[i].musclise(
-				fibers[i].init_rest_len() * 0.2,
-				fibers[i].init_rest_len() * 1.4,
-				0.5, 0
+			fibers[fibid].musclise(
+				fibers[fibid].init_rest_len() * 0.2,
+				fibers[fibid].init_rest_len() * 3.4,
+				0.1, 0
 				);
 		}
 	}
-		
+	
+	// generate ligaments
+	for( int i = 0; i < dots_num; ++i, ++fibid ) {
+		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
+	}
+	
+	materials.resize( imm->chunks.size() );
+	
+	std::cout << "MATERIAL " <<
+	materials.size() << " / " << 
+	VisualServer::get_singleton()->immediate_get_material(im).get_id() << " / " <<
+	VisualServer::get_singleton()->immediate_get_material(im).get_data() <<
+	std::endl;
+	
 }
 
 void Skin::parse( const String& path ) {
@@ -314,9 +388,26 @@ void Skin::update( const float& delta ) {
 	
 }
 
+void Skin::set_surface_material(int p_surface, const Ref<Material> &p_material) {
+	
+	ERR_FAIL_INDEX(p_surface, materials.size());
+	
+	materials[p_surface] = p_material;
+	
+	if (materials[p_surface].is_valid()) {
+		std::cout << "Skin::set_surface_material, materials is valid" << std::endl;
+		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, materials[p_surface]->get_rid());
+	} else {
+		std::cout << "Skin::set_surface_material, materials is INvalid" << std::endl;
+		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, RID());
+	}
+	
+}
+
 void Skin::_bind_methods() {
 	
 	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
 	ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
+	ClassDB::bind_method(D_METHOD("set_surface_material", "p_surface", "p_material"), &Skin::set_surface_material);
 	
 }

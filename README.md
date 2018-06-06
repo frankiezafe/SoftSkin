@@ -16,6 +16,17 @@ First prototype demo (openframeworks):
 * https://github.com/frankiezafe/SoftSkin - mirror
 * https://bitbucket.org/frankiezafe/softskin - hg legacy repo, [OF](http://openframeworks.cc) version
 
+## todo
+
+use 
+
+ memnew( Class / Class(args) )
+ memdelete( instance )
+ memnew_arr( Class , amount )
+ memdelete_arr( pointer to array )
+
+everywhere instead of standard declarations! https://godot.readthedocs.io/en/3.0/development/cpp/core_types.html#memory-model
+
 ## notes
 
 * main object should inherits [GeometryInstance](http://docs.godotengine.org/en/3.0/classes/class_geometryinstance.html#class-geometryinstance) instead of [ImmediateGeometry](http://docs.godotengine.org/en/3.0/classes/class_immediategeometry.html#class-immediategeometry) with a fixed memory allocation - data managed by SkinDot especially should be pointers on arrays of floats, in a glBufferData for instance (if working) -> saving process and memory
