@@ -90,8 +90,8 @@ public:
 		return (*_v3);
 	}
 	
-	bool is_initialised() const {
-		return _v3 != 0;
+	const bool is_initialised() const {
+		return _inititalised;
 	}
 	
 	bool is_local() const {
@@ -102,6 +102,7 @@ protected:
 	
 	Vector3* _v3;
 	bool _local;
+	bool _inititalised;
 	
 	void purge();
 	

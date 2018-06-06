@@ -62,13 +62,16 @@ class SkinDot {
 		std::vector< Vector3* > vec3s;
 		std::vector< Vector3* >::iterator vec3s_end;
 		
-		SkinDotMirror() : empty(true), src(0) {}
+		SkinDotMirror() : empty(true), src(0) {
+		}
 		
-		bool is_enabled() const { src != 0; }
+		bool is_enabled() const { 
+			src != 0; 
+		}
 		
 		void add( Vector3* v ) {
 			
-			assert( is_enabled() );
+			assert( src != 0 );
 			
 			vec3s.push_back( v );
 			vec3s_end = vec3s.end();
@@ -78,7 +81,7 @@ class SkinDot {
 		
 		void sync() {
 			
-			assert( is_enabled() );
+			assert( src != 0 );
 			
 			if ( empty ) {
 				return;
@@ -132,20 +135,21 @@ public:
 	
 	void update( const float& delta_time );
 	
-	bool is_initialised() const {
-		return 
-			_vert.is_initialised() &&
-			_normal.is_initialised() &&
-			_force.is_initialised();
+	const bool is_initialised() const {
+		
+		return _inititalised;
+			
 	}
 	
 	void operator = ( const SkinDot& src );
 	
 	friend std::ostream &operator<<(std::ostream &os, SkinDot const &sd) { 
+		
 		return os << 
 			sd.vert()[0] << ", " <<
 			sd.vert()[0] << ", " <<
 			sd.vert()[0];
+			
 	}
 	
 protected:
@@ -153,7 +157,7 @@ protected:
 // 	static void _bind_methods();
 	
 private:
-		
+	
 	Vector3ptr _vert;
 	Vector3ptr _normal;
 	Vector3ptr _force;
@@ -163,6 +167,8 @@ private:
 	SkinDotMirror mirror_verts;
 	SkinDotMirror mirror_normals;
 	SkinDotMirror mirror_forces;
+	
+	bool _inititalised;
 	
 	void init_internal();
 	

@@ -80,7 +80,7 @@ public:
 	
 	void parse( const String& path );
 	
-	void update( float delta );
+	void update(const float& delta_time );
 	
 	// mandatory methods for GeometryInstance
 	
@@ -101,14 +101,19 @@ private:
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;
-	uint32_t faces_num;
+// 	uint32_t faces_num;
 	SkinDot* dots;
 	SkinFiber* fibers;
-	uint32_t* faces;
+	Vector3* forces;
+// 	uint32_t* faces;
 	
 	void purge();
 	
-	void generate_im( SkinRaw& raw );
+	void generate( SkinRaw& raw );
+	
+	void retrieve_immediate() {
+		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+	}
 	
 // 	void generate();
 	

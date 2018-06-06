@@ -61,7 +61,7 @@ public:
 	
 	void musclise(float min, float max, float freq = 1, float shift = 0);
 	
-	void update(float delta_time);
+	void update( const float& delta_time );
 	
 	// getters
 	

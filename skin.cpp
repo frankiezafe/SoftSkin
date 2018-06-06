@@ -47,10 +47,11 @@ Skin::Skin():
 	imm(0),
 	dots_num(0),
 	fibers_num(0),
-	faces_num(0),
+// 	faces_num(0),
 	dots(0),
 	fibers(0),
-	faces(0)
+	forces(0)
+// 	faces(0)
 {
 	
 	im = VisualServer::get_singleton()->immediate_create();
@@ -61,13 +62,6 @@ Skin::Skin():
 Skin::~Skin() {
 	
 	purge();
-	
-	
-	VisualServer::get_singleton()->free(im);
-	
-	if ( dots != 0 ) delete [] dots;
-	if ( fibers != 0 ) delete [] fibers;
-	if ( faces != 0 ) delete [] faces;
 	
 }
 
@@ -81,126 +75,27 @@ void Skin::purge() {
 		delete [] fibers;
 		fibers = 0;
 	}
-	if ( faces != 0 ) {
-		delete [] faces;
-		faces = 0;
+	if ( forces != 0 ) {
+		delete [] forces;
+		forces = 0;
 	}
+// 	if ( faces != 0 ) {
+// 		delete [] faces;
+// 		faces = 0;
+// 	}
 	dots_num = 0;
 	fibers_num = 0;
-	faces_num = 0;
+// 	faces_num = 0;
 	
 	VisualServer::get_singleton()->immediate_clear(im);
 	
 }
 
-// void Skin::cube() {
-// 	
-// 	purge();
-// 	
-// 	dots_num = 8;
-// 	fibers_num = 12 * 2;
-// 	faces_num = 12 * 3;
-// 	uint32_t i =0;
-// 	
-// 	dots = new SkinDot[dots_num];
-// 	
-// 	dots[0].vert( -1,-1,-1 );
-// 	dots[1].vert( 1,-1,-1 );
-// 	dots[2].vert( 1,1,-1 );
-// 	dots[3].vert( -1,1,-1 );
-// 	
-// 	dots[4].vert( -1,-1,1 );
-// 	dots[5].vert( 1,-1,1 );
-// 	dots[6].vert( 1,1,1 );
-// 	dots[7].vert( -1,1,1 );
-// 	
-// 	fibers = new SkinFiber[fibers_num];
-// 	i =0;
-// 	// edges
-// 	fibers[i].init( &dots[0], &dots[1] ); ++i;
-// 	fibers[i].init( &dots[1], &dots[2] ); ++i;
-// 	fibers[i].init( &dots[2], &dots[3] ); ++i;
-// 	fibers[i].init( &dots[3], &dots[0] ); ++i;
-// 	
-// 	fibers[i].init( &dots[0], &dots[4] ); ++i;
-// 	fibers[i].init( &dots[1], &dots[5] ); ++i;
-// 	fibers[i].init( &dots[2], &dots[6] ); ++i;
-// 	fibers[i].init( &dots[3], &dots[7] ); ++i;
-// 	
-// 	fibers[i].init( &dots[4], &dots[5] ); ++i;
-// 	fibers[i].init( &dots[5], &dots[6] ); ++i;
-// 	fibers[i].init( &dots[6], &dots[7] ); ++i;
-// 	fibers[i].init( &dots[7], &dots[4] ); ++i;
-// 	
-// 	// faces median
-// 	fibers[i].init( &dots[0], &dots[2] ); ++i;
-// 	fibers[i].init( &dots[1], &dots[3] ); ++i;
-// 	fibers[i].init( &dots[0], &dots[5] ); ++i;
-// 	fibers[i].init( &dots[1], &dots[4] ); ++i;
-// 	fibers[i].init( &dots[1], &dots[6] ); ++i;
-// 	fibers[i].init( &dots[2], &dots[5] ); ++i;
-// 	fibers[i].init( &dots[2], &dots[7] ); ++i;
-// 	fibers[i].init( &dots[3], &dots[6] ); ++i;
-// 	fibers[i].init( &dots[3], &dots[4] ); ++i;
-// 	fibers[i].init( &dots[0], &dots[7] ); ++i;
-// 	fibers[i].init( &dots[4], &dots[6] ); ++i;
-// 	fibers[i].init( &dots[7], &dots[5] ); ++i;
-// 	
-// 	for( uint32_t i = 0; i < fibers_num; ++i ) {
-// 		fibers[i].musclise( 0.9, 1.1, 0.5, i * 0.001 );
-// 	}
-// 	
-// 	faces = new uint32_t[faces_num];
-// 	i =0;
-// 	faces[i] = 0; ++i;
-// 	faces[i] = 1; ++i;
-// 	faces[i] = 2; ++i;
-// 	faces[i] = 2; ++i;
-// 	faces[i] = 3; ++i;
-// 	faces[i] = 0; ++i;
-// 	
-// 	faces[i] = 5; ++i;
-// 	faces[i] = 1; ++i;
-// 	faces[i] = 0; ++i;
-// 	faces[i] = 0; ++i;
-// 	faces[i] = 4; ++i;
-// 	faces[i] = 5; ++i;
-// 	
-// 	faces[i] = 6; ++i;
-// 	faces[i] = 2; ++i;
-// 	faces[i] = 1; ++i;
-// 	faces[i] = 1; ++i;
-// 	faces[i] = 5; ++i;
-// 	faces[i] = 6; ++i;
-// 	
-// 	faces[i] = 7; ++i;
-// 	faces[i] = 3; ++i;
-// 	faces[i] = 2; ++i;
-// 	faces[i] = 2; ++i;
-// 	faces[i] = 6; ++i;
-// 	faces[i] = 7; ++i;
-// 	
-// 	faces[i] = 4; ++i;
-// 	faces[i] = 0; ++i;
-// 	faces[i] = 3; ++i;
-// 	faces[i] = 3; ++i;
-// 	faces[i] = 7; ++i;
-// 	faces[i] = 4; ++i;
-// 	
-// 	faces[i] = 6; ++i;
-// 	faces[i] = 5; ++i;
-// 	faces[i] = 4; ++i;
-// 	faces[i] = 4; ++i;
-// 	faces[i] = 7; ++i;
-// 	faces[i] = 6; ++i;
-// 	
-// 	generate();
-// 	
-// // 	std::cout << ((RasterizerStorageGLES3::Immediate*) im.get_data() )->chunks[0].vertices.size() << std::endl;
-// 	
-// }
-
-void Skin::generate_im( SkinRaw& raw ) {
+void Skin::generate( SkinRaw& raw ) {
+	
+	dots_num = raw.verts.size();
+	fibers_num = raw.edges.size();
+	uint32_t faces_num = raw.faces.size();
 	
 	VisualServer::get_singleton()->immediate_begin(
 		im, 
@@ -208,25 +103,85 @@ void Skin::generate_im( SkinRaw& raw ) {
 		RID());
 	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		const Vector3& vert = dots[faces[i]].vert();
-		if ( i == 0 ) {
-			aabb.position = vert;
-			aabb.size = Vector3();
-		} else {
-			aabb.expand_to( vert );
+		
+		Vector<int>& fids = raw.faces[i];
+		int j = fids.size() - 1;
+		
+		while( j >= 0 ) {
+			
+			Vector<float>& vert = raw.verts[fids[j]];
+			Vector3 p( vert[1], vert[2], vert[3] );
+			Vector3 n( vert[4], vert[5], vert[6] );
+			if ( i == 0 ) {
+				aabb.position = p;
+				aabb.size = Vector3();
+			} else {
+				aabb.expand_to( p );
+			}
+			VisualServer::get_singleton()->immediate_normal(im, n );
+			VisualServer::get_singleton()->immediate_vertex(im, p );
+			
+			--j;
+			
 		}
-		VisualServer::get_singleton()->immediate_normal(im, dots[faces[i]].normal() );
-		VisualServer::get_singleton()->immediate_vertex(im, vert );
+		
 	}
 	
 	VisualServer::get_singleton()->immediate_end(im);
 	
-	RasterizerStorageGLES3::Immediate* imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+	retrieve_immediate();
 	
 	// data has been pushed in godot engine,
 	// we can now generate custom object that 
 	// will interacts with it
 	
+	dots = new SkinDot[dots_num];
+	forces = new Vector3[dots_num];
+	Vector<Vector3>& vs = imm->chunks[0].vertices;
+	Vector<Vector3>& ns = imm->chunks[0].normals;
+		
+	uint32_t fvs = 0;
+	
+	for ( uint32_t i = 0; i < faces_num; ++i ) {
+		
+		Vector<int>& fids = raw.faces[i];
+		int j = fids.size() - 1;
+		
+		while( j >= 0 ) {
+		
+			uint32_t id = fids[j];
+			SkinDot& sd = dots[id];
+			if ( !sd.is_initialised() ) {
+				sd.init(
+					&vs[fvs],
+					&ns[fvs],
+					&forces[id]
+				);
+			} else {
+				sd.register_vert( &vs[fvs] );
+				sd.register_normal( &ns[fvs] );
+			}
+			
+			--j;
+			++fvs;
+		
+		}
+		
+	}
+	
+	fibers = new SkinFiber[fibers_num];
+	for( int i = 0; i < fibers_num; ++i ) {
+		Vector<int>& vs = raw.edges[i];
+		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
+		if ( vs[2] != 0 ) {
+			fibers[i].musclise(
+				fibers[i].init_rest_len() * 0.2,
+				fibers[i].init_rest_len() * 1.4,
+				0.5, 0
+				);
+		}
+	}
+		
 }
 
 void Skin::parse( const String& path ) {
@@ -331,11 +286,7 @@ void Skin::parse( const String& path ) {
 		"\tdecompressed.edges " << decompressed.edges.size() << std::endl <<
 		"\tdecompressed.faces " << decompressed.faces.size() << std::endl;
 	
-	generate_im( decompressed );
-	
-	dots_num = decompressed.verts.size();
-	fibers_num = decompressed.edges.size();
-	faces_num = decompressed.faces.size() * 3;
+	generate( decompressed );
 	
 // 	dots = new SkinDot[dots_num];
 // 	for( int i = 0; i < dots_num; ++i ) {
@@ -382,7 +333,7 @@ PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
 	
 }
 
-void Skin::update( float delta ) {
+void Skin::update( const float& delta ) {
 	
 	if ( imm == 0 || dots == 0 ) {
 		std::cout << "Skin::update, object not ready for update!" << std::endl;
@@ -394,10 +345,15 @@ void Skin::update( float delta ) {
 // 	Vector<Vector3>& ns = imm->chunks[0].normals;
 	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
+		
 		dots[i].update( delta );
+		
 	}
+	
 	for( uint32_t i = 0; i < fibers_num; ++i ) {
+		
 		fibers[i].update( delta );
+		
 	}
 // 	for ( uint32_t i = 0; i < faces_num; ++i ) {
 // 		SkinDot::set_v3( vs[i], dots[faces[i]].vert() );

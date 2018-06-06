@@ -53,13 +53,16 @@ SkinFiber::SkinFiber() {
 void SkinFiber::init(SkinDot* a, SkinDot* b) {
 	_a = a;
 	_b = b;	
-	const Vector3& av = _a->vert();
-	const Vector3& bv = _b->vert();
+	
+	const Vector3& av = _a->vert().ref();
+	const Vector3& bv = _b->vert().ref();
+	
 	_rest_len = av.distance_to(bv);
 	_init_rest_len = _rest_len;
 	_dir = ((av)-(bv)).normalized();
 	_middle = av + _dir * _rest_len * 0.5;
 	_muscled = false;
+	
 	muscle_min_max(0, _init_rest_len);
 	muscle_freq(1);
 	muscle_phase_shift(0);
@@ -84,22 +87,30 @@ void SkinFiber::musclise(float min, float max, float freq, float shift) {
 	muscle_phase_shift(shift);
 }
 
-void SkinFiber::update(float delta_time) {
+void SkinFiber::update( const float& delta_time ) {
+	
 	if (!_a || !_b) return;
+	
 	if (_muscled) {
 		update_muscle(delta_time);
 	}
-	const Vector3& av = _a->vert();
-	const Vector3& bv = _b->vert();
+	
+	const Vector3& av = _a->vert().ref();
+	const Vector3& bv = _b->vert().ref();
+	
 	_dir = bv - av;
 	_current_len = _dir.length();
+	
 	float dl = _current_len - _rest_len;
 	_dir.normalize();
+	
 	Vector3 d = _dir;
 	d *= dl * 0.5;
 	_a->push(d);
 	_b->push(-d);
+	
 	_middle = av + _dir * _current_len * 0.5;
+	
 }
 
 // drawing
