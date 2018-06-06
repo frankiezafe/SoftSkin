@@ -58,15 +58,15 @@ public:
 	
 	Vector3ptr( const Vector3* v3 );
 	
-	Vector3ptr( const float& x, const float& y, const float& z );
+	Vector3ptr( const real_t& x, const real_t& y, const real_t& z );
 	
 	~Vector3ptr();
 	
 	void init( const Vector3* v3 );
 		
-	void init( const float& x, const float& y, const float& z );
+	void init( const real_t& x, const real_t& y, const real_t& z );
 	
-	void set( const float& x, const float& y, const float& z );
+	void set( const real_t& x, const real_t& y, const real_t& z );
 	
 	// operators
 	
@@ -78,16 +78,24 @@ public:
 	
 	void operator -= ( const Vector3& v3 );
 	
-	const float& operator [] ( const uint8_t& i ) const;
+	const real_t& operator [] ( const uint8_t& i ) const;
 	
 	void operator >> ( Vector3* v3 ) const;
 	
-	Vector3* ptr() const {
-		return _v3;
+	Vector3 ref() const {
+		return Vector3( (*_x), (*_y), (*_z) );
 	}
 	
-	Vector3& ref() const {
-		return (*_v3);
+	const real_t& x() const {
+		return(*_x);
+	}
+	
+	const real_t& y() const {
+		return(*_y);
+	}
+	
+	const real_t& z() const {
+		return(*_z);
 	}
 	
 	const bool is_initialised() const {
@@ -100,7 +108,10 @@ public:
 
 protected:
 	
-	Vector3* _v3;
+	real_t* _x;
+	real_t* _y;
+	real_t* _z;
+// 	Vector3* _v3;
 	bool _local;
 	bool _inititalised;
 	

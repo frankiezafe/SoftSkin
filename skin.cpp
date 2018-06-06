@@ -50,7 +50,8 @@ Skin::Skin():
 	fibers_num(0),
 	dots(0),
 	fibers(0),
-	forces(0)
+	forces(0),
+	last_delta(0)
 {
 		
 // 	im = VisualServer::get_singleton()->immediate_create();
@@ -92,11 +93,11 @@ void Skin::purge() {
 	
 }
 
-void Skin::generate( SkinRaw& raw ) {
+void Skin::generate() {
 	
 	dots_num = raw.verts.size();
 	fibers_num = raw.edges.size();
-	uint32_t faces_num = raw.faces.size();
+	faces_num = raw.faces.size();
 	
 	dots = new SkinDot[dots_num];
 	forces = new Vector3[dots_num];
@@ -130,24 +131,21 @@ void Skin::generate( SkinRaw& raw ) {
 		}
 	}
 	
-	Array arr;
-	arr.resize(VS::ARRAY_MAX);
-	arr[VS::ARRAY_VERTEX] = points;
-	arr[VS::ARRAY_NORMAL] = normals;
-	arr[VS::ARRAY_INDEX] = indices;
-	
-	int pc = points.size();
+	mesh_arr.resize(VS::ARRAY_MAX);
+	mesh_arr[VS::ARRAY_VERTEX] = points;
+	mesh_arr[VS::ARRAY_NORMAL] = normals;
+	mesh_arr[VS::ARRAY_INDEX] = indices;
 	
 	VisualServer::get_singleton()->mesh_add_surface_from_arrays(
 		mesh_rid,
 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
-		arr
+		mesh_arr
 	);
 	
-	VisualServer::get_singleton()->mesh_surface_set_material(
-		mesh_rid, 0, 
-		materials[0].is_null() ? RID() : materials[0]->get_rid()
-	);
+// 	VisualServer::get_singleton()->mesh_surface_set_material(
+// 		mesh_rid, 0, 
+// 		materials[0].is_null() ? RID() : materials[0]->get_rid()
+// 	);
 	
 	retrieve_object();
 	
@@ -322,8 +320,6 @@ void Skin::generate( SkinRaw& raw ) {
 void Skin::parse( const String& path ) {
 	
 	purge();
-
-	SkinRaw decompressed;
 	
 	_File f;
 	f.open( path, _File::READ );
@@ -336,56 +332,56 @@ void Skin::parse( const String& path ) {
 		
 		if ( l.begins_with( "++vertices++" ) ) {
 			
-			decompressed.vpass = true;
-			decompressed.epass = false;
-			decompressed.fpass = false;
+			raw.vpass = true;
+			raw.epass = false;
+			raw.fpass = false;
 			index = 0;
 			int num = l.right( 12 ).to_int();
-			decompressed.verts.resize( num );
+			raw.verts.resize( num );
 			
 		} else if ( l.begins_with( "++edges++" ) ) {
 			
-			decompressed.vpass = false;
-			decompressed.epass = true;
-			decompressed.fpass = false;
+			raw.vpass = false;
+			raw.epass = true;
+			raw.fpass = false;
 			index = 0;
 			int num = l.right( 9 ).to_int();
-			decompressed.edges.resize( num );
+			raw.edges.resize( num );
 			
 		} else if ( l.begins_with( "++faces++" ) ) {
 			
-			decompressed.vpass = false;
-			decompressed.epass = false;
-			decompressed.fpass = true;
+			raw.vpass = false;
+			raw.epass = false;
+			raw.fpass = true;
 			index = 0;
 			int num = l.right( 9 ).to_int();
-			decompressed.faces.resize( num );
+			raw.faces.resize( num );
 			
-		} else if ( decompressed.vpass ) {
+		} else if ( raw.vpass ) {
 			
 			Vector<float> vs = l.split_floats(" ");
 			if ( vs.size() >= 7 ) {
-				decompressed.verts[index] = vs; ++index;
+				raw.verts[index] = vs; ++index;
 			} else {
 				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
 				return;
 			}
 			
-		} else if ( decompressed.epass ) {
+		} else if ( raw.epass ) {
 			
 			Vector<int> vs = l.split_ints(" ");
 			if ( vs.size() >= 3 ) {
-				decompressed.edges[index] = vs; ++index;
+				raw.edges[index] = vs; ++index;
 			} else {
 				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
 				return;
 			}
 			
-		} else if ( decompressed.fpass ) {
+		} else if ( raw.fpass ) {
 			
 			Vector<int> vs = l.split_ints(" ");
 			if ( vs.size() >= 3 ) {
-				decompressed.faces[index] = vs; ++index;
+				raw.faces[index] = vs; ++index;
 			} else {
 				std::cout << "Skin::parse, failed to decompress line " << i << std::endl;
 				return;
@@ -400,23 +396,23 @@ void Skin::parse( const String& path ) {
 	f.close();
 	
 	if ( 
-		decompressed.verts.empty() ||
-		decompressed.edges.empty() ||
-		decompressed.faces.empty()
+		raw.verts.empty() ||
+		raw.edges.empty() ||
+		raw.faces.empty()
 		) {
 		std::cout << "Skin::parse, inconsistent data: " <<
-		"verts: " << decompressed.verts.size() << ". " <<
-		"edges: " << decompressed.edges.size() << ". " <<
-		"faces: " << decompressed.faces.size() << ". " <<
+		"verts: " << raw.verts.size() << ". " <<
+		"edges: " << raw.edges.size() << ". " <<
+		"faces: " << raw.faces.size() << ". " <<
 		std::endl;
 		return;
 	}
 	
-	decompressed.vpass = false;
-	decompressed.epass = false;
-	decompressed.fpass = false;
+	raw.vpass = false;
+	raw.epass = false;
+	raw.fpass = false;
 	
-	generate( decompressed );
+	generate();
 	
 }
 
@@ -432,7 +428,17 @@ PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
 	
 }
 
+void Skin::_notification(int p_what) {
+	
+	if (p_what == NOTIFICATION_PROCESS ) {
+// 		_update();
+	}
+	
+}
+
 void Skin::update( const float& delta ) {
+
+	std::cout << "Skin::_update()" << std::endl;
 	
 // 	if ( imm == 0 || dots == 0 ) {
 	if ( mesh == 0 || dots == 0 ) {
@@ -452,23 +458,78 @@ void Skin::update( const float& delta ) {
 		
 	}
 	
+// 	PoolVector<Vector3> points;
+// 	PoolVector<Vector3> normals;
+// 	PoolVector<int> indices;
+// 	
+// 	for( uint32_t i = 0; i < dots_num; ++i ) {
+// 		Vector<float>& vert = raw.verts[i];
+// 		points.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+// 		normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+// 		
+// 	}
+// 	
+// 	for ( uint32_t i = 0; i < faces_num; ++i ) {
+// 		Vector<int>& fids = raw.faces[i];
+// 		int j = fids.size() - 1;
+// 		while( j >= 0 ) {
+// 			indices.push_back(fids[j]);
+// 			--j;
+// 		}
+// 	}
+// 	
+// 	mesh_arr.resize(VS::ARRAY_MAX);
+// 	mesh_arr[VS::ARRAY_VERTEX] = points;
+// 	mesh_arr[VS::ARRAY_NORMAL] = normals;
+// 	mesh_arr[VS::ARRAY_INDEX] = indices;
+// 	
+// 	VisualServer::get_singleton()->mesh_clear( mesh_rid );
+// 	VisualServer::get_singleton()->mesh_add_surface_from_arrays(
+// 		mesh_rid,
+// 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
+// 		mesh_arr
+// 	);
+	
+// 	VisualServer::get_singleton()->mesh_surface_set_material(
+// 		mesh_rid, 0, 
+// 		materials[0].is_null() ? RID() : materials[0]->get_rid()
+// 	);
+	
+// 	RasterizerStorageGLES3::Surface* surf = mesh->surfaces[0];
+// 	PoolVector<Vector3>::Read vr = mesh_arr[VS::ARRAY_VERTEX].read();
+// 	uint32_t format = 0;
+// 	for (int i = 0; i < mesh_arr.size(); i++) {
+// 		if (mesh_arr[i].get_type() == Variant::NIL)
+// 			continue;
+// 		format |= (1 << i);
+// 	}
+// 	glBindBuffer(GL_ARRAY_BUFFER, surf->vertex_id);
+// // 	glBufferData(GL_ARRAY_BUFFER, array_size, vr.ptr(), p_format & VS::ARRAY_FLAG_USE_DYNAMIC_UPDATE ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+// 	glBufferData(GL_ARRAY_BUFFER, dots_num * 3, vr.ptr(), format & VS::ARRAY_FLAG_USE_DYNAMIC_UPDATE ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+// 	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+// 	VisualServer::get_singleton()->mesh_surface_update_region(
+// 		mesh_rid, 0, 
+// 		0, mesh_arr[VS::ARRAY_VERTEX]
+// 	);
+	
 // 	imm->instance_change_notify();
 	
 }
 
 void Skin::set_surface_material(int p_surface, const Ref<Material> &p_material) {
 		
-	ERR_FAIL_INDEX(p_surface, materials.size());
-	
-	materials[p_surface] = p_material;
-	
-	if (materials[p_surface].is_valid()) {
-		std::cout << "Skin::set_surface_material, materials is valid" << std::endl;
-		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, materials[p_surface]->get_rid());
-	} else {
-		std::cout << "Skin::set_surface_material, materials is INvalid" << std::endl;
-		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, RID());
-	}
+// 	ERR_FAIL_INDEX(p_surface, materials.size());
+// 	
+// 	materials[p_surface] = p_material;
+// 	
+// 	if (materials[p_surface].is_valid()) {
+// 		std::cout << "Skin::set_surface_material, materials is valid" << std::endl;
+// 		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, materials[p_surface]->get_rid());
+// 	} else {
+// 		std::cout << "Skin::set_surface_material, materials is INvalid" << std::endl;
+// 		VisualServer::get_singleton()->instance_set_surface_material(get_instance(), p_surface, RID());
+// 	}
 	
 }
 

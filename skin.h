@@ -83,7 +83,7 @@ public:
 	void parse( const String& path );
 	
 	void update(const float& delta_time );
-	
+		
 	// mandatory methods for GeometryInstance
 	
 	virtual AABB get_aabb() const;
@@ -96,6 +96,7 @@ public:
 		
 protected:
 	
+	void _notification(int p_what);
 	static void _bind_methods();
 	
 	AABB aabb;
@@ -107,16 +108,21 @@ private:
 	
 	RID mesh_rid;
 	RasterizerStorageGLES3::Mesh* mesh;
+	SkinRaw raw;
+	Array mesh_arr;
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;
+	uint32_t faces_num;
 	SkinDot* dots;
 	SkinFiber* fibers;
 	Vector3* forces;
 	
+	float last_delta;
+	
 	void purge();
 	
-	void generate( SkinRaw& raw );
+	void generate();
 	
 	void retrieve_object() {
 		
