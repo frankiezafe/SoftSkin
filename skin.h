@@ -101,21 +101,19 @@ private:
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;
-// 	uint32_t faces_num;
 	SkinDot* dots;
 	SkinFiber* fibers;
 	Vector3* forces;
-// 	uint32_t* faces;
 	
 	void purge();
 	
 	void generate( SkinRaw& raw );
 	
 	void retrieve_immediate() {
+		
 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+		
 	}
-	
-// 	void generate();
 	
 };
 

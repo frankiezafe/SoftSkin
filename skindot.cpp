@@ -140,7 +140,9 @@ const Vector3ptr& SkinDot::force() const {
 }
 
 const Vector3ptr& SkinDot::normal() const {
+	
 	return _normal;
+	
 }
 
 const float& SkinDot::damping() const {
@@ -182,10 +184,6 @@ void SkinDot::operator = ( const SkinDot& src ) {
 	_kicks = src.kicks();
 	
 }
-
-// void SkinDot::_bind_methods() {
-// 	ClassDB::bind_method(D_METHOD("init", "port"), &OSCreceiver::init);
-// }
 
 void SkinDot::update( const float& delta_time ) {
 	

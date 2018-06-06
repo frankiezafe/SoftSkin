@@ -47,11 +47,9 @@ Skin::Skin():
 	imm(0),
 	dots_num(0),
 	fibers_num(0),
-// 	faces_num(0),
 	dots(0),
 	fibers(0),
 	forces(0)
-// 	faces(0)
 {
 	
 	im = VisualServer::get_singleton()->immediate_create();
@@ -79,13 +77,9 @@ void Skin::purge() {
 		delete [] forces;
 		forces = 0;
 	}
-// 	if ( faces != 0 ) {
-// 		delete [] faces;
-// 		faces = 0;
-// 	}
+	
 	dots_num = 0;
 	fibers_num = 0;
-// 	faces_num = 0;
 	
 	VisualServer::get_singleton()->immediate_clear(im);
 	
@@ -281,50 +275,14 @@ void Skin::parse( const String& path ) {
 	decompressed.epass = false;
 	decompressed.fpass = false;
 	
-	std::cout << "Skin::parse, successfull decompression:" << std::endl <<
-		"\tdecompressed.verts " << decompressed.verts.size() << std::endl <<
-		"\tdecompressed.edges " << decompressed.edges.size() << std::endl <<
-		"\tdecompressed.faces " << decompressed.faces.size() << std::endl;
-	
 	generate( decompressed );
-	
-// 	dots = new SkinDot[dots_num];
-// 	for( int i = 0; i < dots_num; ++i ) {
-// 		Vector<float>& vs = decompressed.verts[i];
-// 		dots[i].vert( vs[1], vs[2], vs[3] );
-// 		dots[i].normal( vs[4], vs[5], vs[6] );
-// 		dots[i].damping( 0.2f );
-// 	}
-// 	
-// 	fibers = new SkinFiber[fibers_num];
-// 	for( int i = 0; i < fibers_num; ++i ) {
-// 		Vector<int>& vs = decompressed.edges[i];
-// 		fibers[i].init( &dots[vs[0]], &dots[vs[1]] );
-// 		if ( vs[2] != 0 ) {
-// 			fibers[i].musclise(
-// 				fibers[i].init_rest_len() * 0.2,
-// 				fibers[i].init_rest_len() * 1.4,
-// 				0.5, 0
-// 				);
-// 		}
-// 	}
-// 	
-// 	faces = new uint32_t[faces_num];
-// 	i = 0;
-// 	int vmax = decompressed.faces.size();
-// 	for( int v = 0; v < vmax; ++v ) {
-// 		faces[i] = decompressed.faces[v][2]; ++i;
-// 		faces[i] = decompressed.faces[v][1]; ++i;
-// 		faces[i] = decompressed.faces[v][0]; ++i;
-// 	}
-	
-// 	generate();
-// 	std::cout << "Skin::parse lines: " << i << std::endl;
 	
 }
 
 AABB Skin::get_aabb() const {
+	
 	return aabb;
+	
 }
 
 PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
@@ -340,10 +298,6 @@ void Skin::update( const float& delta ) {
 		return;
 	}
 	
-// 	RasterizerStorageGLES3::Immediate* imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
-// 	Vector<Vector3>& vs = imm->chunks[0].vertices;
-// 	Vector<Vector3>& ns = imm->chunks[0].normals;
-	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		
 		dots[i].update( delta );
@@ -355,16 +309,14 @@ void Skin::update( const float& delta ) {
 		fibers[i].update( delta );
 		
 	}
-// 	for ( uint32_t i = 0; i < faces_num; ++i ) {
-// 		SkinDot::set_v3( vs[i], dots[faces[i]].vert() );
-// 		SkinDot::set_v3( ns[i], dots[faces[i]].normal() );
-// 	}
+	
 	imm->instance_change_notify();
 	
 }
 
 void Skin::_bind_methods() {
-// 	ClassDB::bind_method(D_METHOD("cube"), &Skin::cube);
+	
 	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
 	ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
+	
 }
