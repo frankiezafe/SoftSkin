@@ -55,8 +55,6 @@
 #include "scene/resources/mesh.h"
 #include "scene/3d/visual_instance.h"
 #include "drivers/gles3/rasterizer_storage_gles3.h"
-
-#include "scene/3d/visual_instance.h"
 #include "scene/resources/mesh.h"
 
 class Skin: public GeometryInstance {
@@ -104,8 +102,11 @@ protected:
 	
 private:
 	
-	RID im;
-	RasterizerStorageGLES3::Immediate* imm;
+// 	RID im;
+// 	RasterizerStorageGLES3::Immediate* imm;
+	
+	RID mesh_rid;
+	RasterizerStorageGLES3::Mesh* mesh;
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;
@@ -119,7 +120,8 @@ private:
 	
 	void retrieve_immediate() {
 		
-		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+// 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+		mesh = (RasterizerStorageGLES3::Mesh*) mesh_rid.get_data();
 		
 	}
 	

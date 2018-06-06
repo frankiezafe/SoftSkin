@@ -44,7 +44,8 @@
 #include "skin.h"
 
 Skin::Skin():
-	imm(0),
+// 	imm(0),
+	mesh(0),
 	dots_num(0),
 	fibers_num(0),
 	dots(0),
@@ -52,8 +53,11 @@ Skin::Skin():
 	forces(0)
 {
 		
-	im = VisualServer::get_singleton()->immediate_create();
-	set_base(im);
+// 	im = VisualServer::get_singleton()->immediate_create();
+// 	set_base(im);
+	
+	mesh_rid = VisualServer::get_singleton()->mesh_create();
+	set_base(mesh_rid);
 	
 }
 
@@ -65,15 +69,15 @@ Skin::~Skin() {
 
 void Skin::purge() {
 	
-	if ( dots != 0 ) {
+	if ( dots ) {
 		delete [] dots;
 		dots = 0;
 	}
-	if ( fibers != 0 ) {
+	if ( fibers ) {
 		delete [] fibers;
 		fibers = 0;
 	}
-	if ( forces != 0 ) {
+	if ( forces ) {
 		delete [] forces;
 		forces = 0;
 	}
@@ -81,7 +85,10 @@ void Skin::purge() {
 	dots_num = 0;
 	fibers_num = 0;
 	
-	VisualServer::get_singleton()->immediate_clear(im);
+// 	VisualServer::get_singleton()->immediate_clear(im);
+	if ( mesh ) {
+		VisualServer::get_singleton()->mesh_clear(mesh_rid);
+	}
 	
 }
 
@@ -91,160 +98,194 @@ void Skin::generate( SkinRaw& raw ) {
 	fibers_num = raw.edges.size();
 	uint32_t faces_num = raw.faces.size();
 	
-	RID mat;
+	materials.resize(3);
 	
-	// STD MESH ************
+	PoolVector<Vector3> points;
+	PoolVector<Vector3> normals;
+	PoolVector<int> indices;
 	
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
-		RID());
-	
-	mat = VisualServer::get_singleton()->material_create();
-	// see scenes/resources/material.cpp, line 230
-	VisualServer::get_singleton()->material_set_param( mat, "albedo", Color(1,0,0,1) );
-	VisualServer::get_singleton()->immediate_set_material( im, mat );
-	
-	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		
-		Vector<int>& fids = raw.faces[i];
-		int j = fids.size() - 1;
-		
-		while( j >= 0 ) {
-			
-			Vector<float>& vert = raw.verts[fids[j]];
-			Vector3 p( vert[1], vert[2], vert[3] );
-			Vector3 n( vert[4], vert[5], vert[6] );
-			if ( i == 0 ) {
-				aabb.position = p;
-				aabb.size = Vector3();
-			} else {
-				aabb.expand_to( p );
-			}
-			VisualServer::get_singleton()->immediate_normal(im, n );
-			VisualServer::get_singleton()->immediate_vertex(im, p );
-			
-			--j;
-			
-		}
-		
-	}
-	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	
-	// DEBUG MESHES ************
-	// FIBERS ************
-	
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
-		RID());
-	
-// 	mat = VisualServer::get_singleton()->material_create();
-// 	VisualServer::get_singleton()->immediate_set_material( im, mat );
-	
-	for ( uint32_t i = 0; i < fibers_num; ++i ) {
-		Vector<int>& vs = raw.edges[i];
-		for ( uint32_t j = 0; j < 2; ++j ) {
-			Vector<float>& vert = raw.verts[vs[j]];
-			Vector3 p( vert[1], vert[2], vert[3] );
-			VisualServer::get_singleton()->immediate_vertex(im, p );
-		}
-	}
-	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	// LIGAMENTS ************
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
-		RID());
-	
-// 	mat = VisualServer::get_singleton()->material_create();
-// 	VisualServer::get_singleton()->immediate_set_material( im, mat );
-	
-	for ( uint32_t i = 0; i < dots_num; ++i ) {
+	for( uint32_t i = 0; i < dots_num; ++i ) {
 		Vector<float>& vert = raw.verts[i];
-		Vector3 p( vert[1], vert[2], vert[3] );
-		VisualServer::get_singleton()->immediate_vertex(im, p );
-		VisualServer::get_singleton()->immediate_vertex(im, p );
+		points.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+		normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
 	}
-	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	// all meshes created
-	
-	
-	retrieve_immediate();
-	
-	// data has been pushed in godot engine,
-	// we can now generate custom object that 
-	// will interacts with it
-	
-	dots = new SkinDot[dots_num];
-	forces = new Vector3[dots_num];
-	Vector<Vector3>& vs = imm->chunks[0].vertices;
-	Vector<Vector3>& ns = imm->chunks[0].normals;
-		
-	uint32_t fvs = 0;
-	
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		
 		Vector<int>& fids = raw.faces[i];
 		int j = fids.size() - 1;
-		
 		while( j >= 0 ) {
-		
-			uint32_t id = fids[j];
-			SkinDot& sd = dots[id];
-			if ( !sd.is_initialised() ) {
-				sd.init(
-					&vs[fvs],
-					&ns[fvs],
-					&forces[id]
-				);
-				sd.damping( 0.1 );
-			} else {
-				sd.register_vert( &vs[fvs] );
-				sd.register_normal( &ns[fvs] );
-			}
-			
+			indices.push_back(fids[j]);
 			--j;
-			++fvs;
-		
-		}
-		
-	}
-	
-	// debugging ligaments
-	Vector<Vector3>& vs_liga = imm->chunks[2].vertices;
-	for ( uint32_t i = 0; i < dots_num; ++i ) {
-		dots[i].register_vert( &vs_liga[(i*2)+1] );
-	}
-	
-	fibers = new SkinFiber[fibers_num + dots_num];
-	uint32_t fibid = 0;
-	
-	// generate fibers and tensors
-	for( int i = 0; i < fibers_num; ++i, ++fibid ) {
-		Vector<int>& vs = raw.edges[i];
-		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
-		if ( vs[2] != 0 ) {
-			fibers[fibid].musclise(
-				fibers[fibid].init_rest_len() * 0.2,
-				fibers[fibid].init_rest_len() * 3.4,
-				0.1, 0
-				);
 		}
 	}
 	
-	// generate ligaments
-	for( int i = 0; i < dots_num; ++i, ++fibid ) {
-		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
-	}
+	Array arr;
+	arr.resize(VS::ARRAY_MAX);
+	arr[VS::ARRAY_VERTEX] = points;
+	arr[VS::ARRAY_NORMAL] = normals;
+	arr[VS::ARRAY_INDEX] = indices;
 	
-	materials.resize( imm->chunks.size() );
+	int pc = points.size();
+	
+	VisualServer::get_singleton()->mesh_add_surface_from_arrays(
+		mesh_rid,
+		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
+		arr
+	);
+	
+	VisualServer::get_singleton()->mesh_surface_set_material(
+		mesh_rid, 0, 
+		materials[0].is_null() ? RID() : materials[0]->get_rid()
+	);
+		
+	
+// 	RID mat;
+// 	
+// 	// STD MESH ************
+// 	
+// 	VisualServer::get_singleton()->immediate_begin(
+// 		im, 
+// 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
+// 		RID());
+// 	
+// 	mat = VisualServer::get_singleton()->material_create();
+// 	// see scenes/resources/material.cpp, line 230
+// 	VisualServer::get_singleton()->material_set_param( mat, "albedo", Color(1,0,0,1) );
+// 	VisualServer::get_singleton()->immediate_set_material( im, mat );
+// 	
+// 	for ( uint32_t i = 0; i < faces_num; ++i ) {
+// 		
+// 		Vector<int>& fids = raw.faces[i];
+// 		int j = fids.size() - 1;
+// 		
+// 		while( j >= 0 ) {
+// 			
+// 			Vector<float>& vert = raw.verts[fids[j]];
+// 			Vector3 p( vert[1], vert[2], vert[3] );
+// 			Vector3 n( vert[4], vert[5], vert[6] );
+// 			if ( i == 0 ) {
+// 				aabb.position = p;
+// 				aabb.size = Vector3();
+// 			} else {
+// 				aabb.expand_to( p );
+// 			}
+// 			VisualServer::get_singleton()->immediate_normal(im, n );
+// 			VisualServer::get_singleton()->immediate_vertex(im, p );
+// 			
+// 			--j;
+// 			
+// 		}
+// 		
+// 	}
+// 	
+// 	VisualServer::get_singleton()->immediate_end(im);
+// 
+// 	
+// 	// DEBUG MESHES ************
+// 	// FIBERS ************
+// 	
+// 	VisualServer::get_singleton()->immediate_begin(
+// 		im, 
+// 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+// 		RID());
+// 	
+// 	for ( uint32_t i = 0; i < fibers_num; ++i ) {
+// 		Vector<int>& vs = raw.edges[i];
+// 		for ( uint32_t j = 0; j < 2; ++j ) {
+// 			Vector<float>& vert = raw.verts[vs[j]];
+// 			Vector3 p( vert[1], vert[2], vert[3] );
+// 			VisualServer::get_singleton()->immediate_vertex(im, p );
+// 		}
+// 	}
+// 	
+// 	VisualServer::get_singleton()->immediate_end(im);
+// 	
+// 	// LIGAMENTS ************
+// 	VisualServer::get_singleton()->immediate_begin(
+// 		im, 
+// 		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
+// 		RID());
+// 	
+// 	for ( uint32_t i = 0; i < dots_num; ++i ) {
+// 		Vector<float>& vert = raw.verts[i];
+// 		Vector3 p( vert[1], vert[2], vert[3] );
+// 		VisualServer::get_singleton()->immediate_vertex(im, p );
+// 		VisualServer::get_singleton()->immediate_vertex(im, p );
+// 	}
+// 	
+// 	VisualServer::get_singleton()->immediate_end(im);
+// 	
+// 	// all meshes created
+// 	
+// 	
+// 	retrieve_immediate();
+// 	
+// 	// data has been pushed in godot engine,
+// 	// we can now generate custom object that 
+// 	// will interacts with it
+// 	
+// 	dots = new SkinDot[dots_num];
+// 	forces = new Vector3[dots_num];
+// 	Vector<Vector3>& vs = imm->chunks[0].vertices;
+// 	Vector<Vector3>& ns = imm->chunks[0].normals;
+// 		
+// 	uint32_t fvs = 0;
+// 	
+// 	for ( uint32_t i = 0; i < faces_num; ++i ) {
+// 		
+// 		Vector<int>& fids = raw.faces[i];
+// 		int j = fids.size() - 1;
+// 		
+// 		while( j >= 0 ) {
+// 		
+// 			uint32_t id = fids[j];
+// 			SkinDot& sd = dots[id];
+// 			if ( !sd.is_initialised() ) {
+// 				sd.init(
+// 					&vs[fvs],
+// 					&ns[fvs],
+// 					&forces[id]
+// 				);
+// 				sd.damping( 0.1 );
+// 			} else {
+// 				sd.register_vert( &vs[fvs] );
+// 				sd.register_normal( &ns[fvs] );
+// 			}
+// 			
+// 			--j;
+// 			++fvs;
+// 		
+// 		}
+// 		
+// 	}
+// 	
+// 	// debugging ligaments
+// 	Vector<Vector3>& vs_liga = imm->chunks[2].vertices;
+// 	for ( uint32_t i = 0; i < dots_num; ++i ) {
+// 		dots[i].register_vert( &vs_liga[(i*2)+1] );
+// 	}
+// 	
+// 	fibers = new SkinFiber[fibers_num + dots_num];
+// 	uint32_t fibid = 0;
+// 	
+// 	// generate fibers and tensors
+// 	for( int i = 0; i < fibers_num; ++i, ++fibid ) {
+// 		Vector<int>& vs = raw.edges[i];
+// 		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
+// 		if ( vs[2] != 0 ) {
+// 			fibers[fibid].musclise(
+// 				fibers[fibid].init_rest_len() * 0.2,
+// 				fibers[fibid].init_rest_len() * 3.4,
+// 				0.1, 0
+// 				);
+// 		}
+// 	}
+// 	
+// 	// generate ligaments
+// 	for( int i = 0; i < dots_num; ++i, ++fibid ) {
+// 		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
+// 	}
+// 	
+// 	materials.resize( imm->chunks.size() );
 
 }
 
@@ -363,7 +404,8 @@ PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
 
 void Skin::update( const float& delta ) {
 	
-	if ( imm == 0 || dots == 0 ) {
+// 	if ( imm == 0 || dots == 0 ) {
+	if ( mesh == 0 || dots == 0 ) {
 		std::cout << "Skin::update, object not ready for update!" << std::endl;
 		return;
 	}
@@ -380,7 +422,7 @@ void Skin::update( const float& delta ) {
 		
 	}
 	
-	imm->instance_change_notify();
+// 	imm->instance_change_notify();
 	
 }
 
