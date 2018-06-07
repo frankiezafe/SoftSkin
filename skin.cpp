@@ -82,12 +82,13 @@ void Skin::generate( SkinRaw& raw ) {
 	
 	unbind_root();
 	
-	surfaces.resize(2);
+	surfaces.resize(3);
 	uint8_t surfid = 0;
 	
 	// ********** MAIN MESH **********
 	surfid = 0;
 	surfaces[surfid].type = Mesh::PRIMITIVE_TRIANGLES;
+	surfaces[surfid].material = main_material;
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		Vector<float>& vert = raw.verts[i];
 		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
@@ -102,9 +103,10 @@ void Skin::generate( SkinRaw& raw ) {
 		}
 	}
 	
-	// ********** DEBUG MESH **********
+	// ********** DEBUG FIBERS **********
 	surfid = 1;
 	surfaces[surfid].type = Mesh::PRIMITIVE_LINES;
+	surfaces[surfid].material = fiber_material;
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		Vector<float>& vert = raw.verts[i];
 		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
@@ -114,6 +116,20 @@ void Skin::generate( SkinRaw& raw ) {
 		Vector<int>& vs = raw.edges[i];
 		surfaces[surfid].indices.push_back(vs[0]);
 		surfaces[surfid].indices.push_back(vs[1]);
+	}
+	
+	// ********** DEBUG LIGAMENTS **********
+	surfid = 2;
+	surfaces[surfid].type = Mesh::PRIMITIVE_LINES;
+	surfaces[surfid].material = ligament_material;
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		Vector<float>& vert = raw.verts[i];
+		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+		surfaces[surfid].normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+		surfaces[surfid].normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+		surfaces[surfid].indices.push_back( ( i * 2 ) + 0 );
+		surfaces[surfid].indices.push_back( ( i * 2 ) + 1 );
 	}
 	
 	// linking all poolvector writters
@@ -137,16 +153,18 @@ void Skin::generate( SkinRaw& raw ) {
 			&surfaces[0].normalsw[i],
 			&forces[i]
 		);
+		dots[i].register_vert( 
+			&surfaces[2].verticesw[ ( i * 2 ) + 1 ]
+		);
 	}
 	
 	fibers = memnew_arr( SkinFiber , fibers_num + dots_num );
-	ligaments_heads = memnew_arr( Vector3 , dots_num );
 	uint32_t fibid = 0;
 	
 	// generate fibers and tensors
-	for( int i = 0; i < fibers_num; ++i ) {
+	for( int i = 0; i < fibers_num; ++i, ++fibid ) {
 		Vector<int>& vs = raw.edges[i];
-		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
+		fibers[fibid].fiber( &dots[vs[0]], &dots[vs[1]] );
 		if ( vs[2] != 0 ) {
 			fibers[fibid].musclise(
 				fibers[fibid].init_rest_len() * 0.2,
@@ -154,13 +172,12 @@ void Skin::generate( SkinRaw& raw ) {
 				0.5, 0
 			);
 		}
-		++fibid;
 	}
 	// generate ligaments
+	ligaments_heads = memnew_arr( Vector3* , dots_num );
 	for( int i = 0; i < dots_num; ++i, ++fibid ) {
-		ligaments_heads[i] = dots[i].vert().ref();
-		fibers[fibid].init( &ligaments_heads[i], &dots[i] );
-		++fibid;
+		ligaments_heads[i] = &surfaces[surfid].verticesw[ ( i * 2 ) ];
+		fibers[fibid].ligament( ligaments_heads[i], &dots[i] );
 	}
 	
 	bind_root();
@@ -431,9 +448,55 @@ void Skin::update( const float& delta ) {
 */
 }
 
+void Skin::set_main_material( const Ref<Material> &material ) {
+	main_material = material;
+}
+
+Ref<Material> Skin::get_main_material() const {
+	return main_material;
+}
+
+void Skin::set_fiber_material( const Ref<Material> &material ) {
+	fiber_material = material;
+}
+
+Ref<Material> Skin::get_fiber_material() const {
+	return fiber_material;
+}
+
+void Skin::set_ligament_material( const Ref<Material> &material ) {
+	ligament_material = material;
+}
+
+Ref<Material> Skin::get_ligament_material() const {
+	return ligament_material;
+}
+
 void Skin::_bind_methods() {
 	
 	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
 	ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
+	
+	ClassDB::bind_method(D_METHOD("set_main_material", "material"), &Skin::set_main_material);
+	ClassDB::bind_method(D_METHOD("get_main_material"), &Skin::get_main_material);
+	ClassDB::bind_method(D_METHOD("set_fiber_material", "material"), &Skin::set_fiber_material);
+	ClassDB::bind_method(D_METHOD("get_fiber_material"), &Skin::get_fiber_material);
+	ClassDB::bind_method(D_METHOD("set_ligament_material", "material"), &Skin::set_ligament_material);
+	ClassDB::bind_method(D_METHOD("get_ligament_material"), &Skin::get_ligament_material);
+	
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, 
+			"main_material", PROPERTY_HINT_RESOURCE_TYPE, 
+			"SpatialMaterial,ShaderMaterial"), 
+			"set_main_material", "get_main_material");
+	
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, 
+			"fiber_material", PROPERTY_HINT_RESOURCE_TYPE, 
+			"SpatialMaterial,ShaderMaterial"), 
+			"set_fiber_material", "get_fiber_material");
+	
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, 
+			"ligament_material", PROPERTY_HINT_RESOURCE_TYPE, 
+			"SpatialMaterial,ShaderMaterial"), 
+			"set_ligament_material", "get_ligament_material");
 	
 }

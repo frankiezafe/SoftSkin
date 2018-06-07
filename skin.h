@@ -96,8 +96,22 @@ public:
 	
 	void update(const float& delta_time );
 	
-	// mandatory methods for GeometryInstance
+	void set_main_material( const Ref<Material> &material );
+	
+	void set_fiber_material( const Ref<Material> &material );
+	
+	void set_ligament_material( const Ref<Material> &material );
+	
+	
+	Ref<Material> get_main_material() const;
+	
+	Ref<Material> get_fiber_material() const;
+	
+	Ref<Material> get_ligament_material() const;
+	
+	// mandatory methods for VisualInstance
 	virtual AABB get_aabb() const;
+	
 	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
 	
 protected:
@@ -108,19 +122,20 @@ protected:
 	
 private:
 	
-// 	RID im;
-// 	RasterizerStorageGLES3::Immediate* imm;
-	
 	uint32_t dots_num;
 	uint32_t fibers_num;
 	uint32_t faces_num;
 	SkinDot* dots;
 	Vector3* forces;
-	Vector3* ligaments_heads;
+	Vector3** ligaments_heads;
 	SkinFiber* fibers;
 	
 	Ref<ArrayMesh> root_mesh;
 	Vector<ShapeUpdateSurface> surfaces;
+	
+	Ref<Material> main_material;
+	Ref<Material> fiber_material;
+	Ref<Material> ligament_material;
 	
 	void purge();
 	
@@ -129,12 +144,6 @@ private:
 	void unbind_root();
 	
 	void bind_root();
-	
-// 	void retrieve_immediate() {
-// 		
-// 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
-// 		
-// 	}
 	
 };
 

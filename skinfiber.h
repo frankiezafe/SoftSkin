@@ -61,24 +61,41 @@ public:
 		
 	};
 	
+	static std::string print_type( const skin_fiber_t& t ) {
+		switch( t ) {
+			case sf_UNDEFINED:
+				return "sf_UNDEFINED";
+			case sf_FIBER:
+				return "sf_FIBER";
+			case sf_TENSOR:
+				return "sf_TENSOR";
+			case sf_LIGAMENT:
+				return "sf_LIGAMENT";
+			case sf_MUSCLE:
+				return "sf_MUSCLE";
+			default:
+				return "INVALID TYPE!";
+		}
+	}
+	
 	SkinFiber();
 	
 	/* 
 	 * Initialisation of a sf_FIBER or a sf_TENSOR 
 	 */
-	bool init( SkinDot* a, SkinDot* b );
+	bool fiber( SkinDot* a, SkinDot* b );
 	
 	
 	/* 
 	 * Initialisation of a sf_FIBER or a sf_TENSOR
 	 * @param len: arbritrary rest length for the fiber
 	 */
-	bool init( SkinDot* a, SkinDot* b, float len );
+	bool fiber( SkinDot* a, SkinDot* b, float len );
 	
 	/* 
 	 * Initialisation of a sf_LIGAMENT or a sf_MUSCLE 
 	 */
-	bool init( Vector3* a, SkinDot* b );
+	bool ligament( Vector3* a, SkinDot* b );
 	
 	bool muscle( bool enable );
 	

@@ -52,18 +52,28 @@ _type(sf_UNDEFINED),
 _rest_len(0),
 _rest_len_multiplier(1),
 _init_rest_len(0),
-_stiffness(1)
+_stiffness(1),
+_muscled(false),
+_muscle_min_len(0),
+_muscle_max_len(0),
+_muscle_delta_len(0),
+_muscle_a(0),
+_muscle_phase_shift(0),
+_muscle_frequency(0)
 {}
 
-bool SkinFiber::init( SkinDot* a, SkinDot* b ) {
+bool SkinFiber::fiber( SkinDot* a, SkinDot* b ) {
 	
 	if ( _type != sf_UNDEFINED ) {
-		std::cout << "SkinFiber::init, this object is already initialised" << std::endl;
+		std::cout << 
+			"SkinFiber::init, this object is already initialised " << 
+			print_type(_type) << 
+			std::endl;
 		return false;
 	}
 	
 	_head_dot = a;
-	_tail = b;	
+	_tail = b;
 	
 	const Vector3& av = _head_dot->vert().ref();
 	const Vector3& bv = _tail->vert().ref();
@@ -72,11 +82,6 @@ bool SkinFiber::init( SkinDot* a, SkinDot* b ) {
 	_init_rest_len = _rest_len;
 	_dir = ((av)-(bv)).normalized();
 	_middle = av + _dir * _rest_len * 0.5;
-	_muscled = false;
-	
-	muscle_min_max(0, _init_rest_len);
-	muscle_freq(1);
-	muscle_phase_shift(0);
 	
 	_type = sf_FIBER;
 	
@@ -84,24 +89,26 @@ bool SkinFiber::init( SkinDot* a, SkinDot* b ) {
 	
 }
 
-bool SkinFiber::init( SkinDot* a, SkinDot* b, float len ) {
+bool SkinFiber::fiber( SkinDot* a, SkinDot* b, float len ) {
 	
-	if ( !init(a, b) ) {
+	if ( !fiber(a, b) ) {
 		return false;
 	}
 	
 	_rest_len = len;
 	_init_rest_len = len;
-	muscle_min_max(0, _init_rest_len);
 	
 	return true;
 	
 }
 
-bool SkinFiber::init( Vector3* a, SkinDot* b ) {
+bool SkinFiber::ligament( Vector3* a, SkinDot* b ) {
 	
 	if ( _type != sf_UNDEFINED ) {
-		std::cout << "SkinFiber::init, this object is already initialised" << std::endl;
+		std::cout << 
+		"SkinFiber::init, this object is already initialised " << 
+		print_type(_type) << 
+		std::endl;
 		return false;
 	}
 	
@@ -115,11 +122,6 @@ bool SkinFiber::init( Vector3* a, SkinDot* b ) {
 	_init_rest_len = _rest_len;
 	_dir = ((av)-(bv)).normalized();
 	_middle = av + _dir * _rest_len * 0.5;
-	_muscled = false;
-	
-	muscle_min_max(0, _init_rest_len);
-	muscle_freq(1);
-	muscle_phase_shift(0);
 	
 	_type = sf_LIGAMENT;
 	
@@ -138,6 +140,7 @@ bool SkinFiber::muscle( bool enable ) {
 	}
 	
 	_muscled = enable;
+	_muscle_max_len = _init_rest_len;
 	
 	if ( _type == sf_FIBER ) {
 		
@@ -185,7 +188,7 @@ void SkinFiber::update( const float& delta_time ) {
 		case sf_TENSOR:
 			update_fiber( 
 			_head_dot->vert().ref(),
-						 _tail->vert().ref()
+			_tail->vert().ref()
 			);
 			break;
 			
@@ -193,7 +196,7 @@ void SkinFiber::update( const float& delta_time ) {
 		case sf_MUSCLE:
 			update_fiber( 
 			(*_head_vec3),
-						 _tail->vert().ref()
+			_tail->vert().ref()
 			);
 			break;
 			
