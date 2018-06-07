@@ -194,7 +194,7 @@ void SkinDot::update( const float& delta_time ) {
 	Vector3 consumed = _force.ref() * _damping / sqrt(_kicks - 1);
 	_force -= consumed;
 	_vert += consumed;
-	_vert += _normal.ref() * delta_time * 0.1;
+// 	_vert += _normal.ref() * delta_time * 0.1;
 	_kicks = 0;
 	
 	mirror_verts.sync();

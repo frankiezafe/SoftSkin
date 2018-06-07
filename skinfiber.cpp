@@ -186,18 +186,12 @@ void SkinFiber::update( const float& delta_time ) {
 		
 		case sf_FIBER:
 		case sf_TENSOR:
-			update_fiber( 
-			_head_dot->vert().ref(),
-			_tail->vert().ref()
-			);
+			update_fiber();
 			break;
 			
 		case sf_LIGAMENT:
 		case sf_MUSCLE:
-			update_fiber( 
-			(*_head_vec3),
-			_tail->vert().ref()
-			);
+			update_ligament();
 			break;
 			
 		default:
@@ -207,30 +201,35 @@ void SkinFiber::update( const float& delta_time ) {
 	
 }
 
-void SkinFiber::update_fiber( const Vector3& av, const Vector3& bv ) {
+void SkinFiber::update_fiber() {
 	
-	_dir = bv - av;
+	const Vector3& av = _head_dot->vert().ref();
+	
+	_dir = _tail->vert().ref() - av;
 	_current_len = _dir.length();
 	
 	float dl = _current_len - ( _rest_len * _rest_len_multiplier );
 	_dir.normalize();
 	
 	Vector3 d = _dir * dl * _stiffness;
-	
-	switch( _type ) {
-		
-		case sf_FIBER:
-		case sf_TENSOR:
-			d *= 0.5;
-			_head_dot->push(d);
-			break;
-			
-		default:
-			break;
-			
-	}
+	d *= 0.5;
+	_head_dot->push(d);
 	
 	_tail->push(-d);
+	
+	_middle = av + _dir * _current_len * 0.5;
+	
+}
+
+void SkinFiber::update_ligament() {
+	
+	const Vector3& av = (*_head_vec3);
+	
+	_dir = _tail->vert().ref() - av;
+	_current_len = _dir.length();
+	_dir.normalize();
+	
+	_tail->push( _dir * _stiffness );
 	
 	_middle = av + _dir * _current_len * 0.5;
 	
@@ -299,6 +298,12 @@ const float& SkinFiber::stiffness() const {
 const bool& SkinFiber::muscle() const {
 	
 	return _muscled;
+	
+}
+
+const int& SkinFiber::type() const {
+	
+	return _type;
 	
 }
 

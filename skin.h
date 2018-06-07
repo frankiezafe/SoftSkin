@@ -96,12 +96,15 @@ public:
 	
 	void update(const float& delta_time );
 	
+	void set_ligament_strength( const float& s );
+	
 	void set_main_material( const Ref<Material> &material );
 	
 	void set_fiber_material( const Ref<Material> &material );
 	
 	void set_ligament_material( const Ref<Material> &material );
 	
+	float get_ligament_strength() const;
 	
 	Ref<Material> get_main_material() const;
 	
@@ -129,6 +132,8 @@ private:
 	Vector3* forces;
 	Vector3** ligaments_heads;
 	SkinFiber* fibers;
+	
+	float ligament_strength;
 	
 	Ref<ArrayMesh> root_mesh;
 	Vector<ShapeUpdateSurface> surfaces;

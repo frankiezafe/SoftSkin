@@ -49,7 +49,8 @@ Skin::Skin():
 	dots(0),
 	forces(0),
 	ligaments_heads(0),
-	fibers(0)
+	fibers(0),
+	ligament_strength(1)
 {}
 
 Skin::~Skin() {
@@ -178,76 +179,13 @@ void Skin::generate( SkinRaw& raw ) {
 	for( int i = 0; i < dots_num; ++i, ++fibid ) {
 		ligaments_heads[i] = &surfaces[surfid].verticesw[ ( i * 2 ) ];
 		fibers[fibid].ligament( ligaments_heads[i], &dots[i] );
+		fibers[fibid].stiffness( ligament_strength );
 	}
+	
+	fibers_num += dots_num;
 	
 	bind_root();
 	
-	// data has been pushed in godot engine,
-	// we can now generate custom object that 
-	// will interacts with it
-
-/*
-	dots = new SkinDot[dots_num];
-	forces = new Vector3[dots_num];
-	Vector<Vector3>& vs = imm->chunks[0].vertices;
-	Vector<Vector3>& ns = imm->chunks[0].normals;
-		
-	uint32_t fvs = 0;
-	
-	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		
-		Vector<int>& fids = raw.faces[i];
-		int j = fids.size() - 1;
-		
-		while( j >= 0 ) {
-		
-			uint32_t id = fids[j];
-			SkinDot& sd = dots[id];
-			if ( !sd.is_initialised() ) {
-				sd.init(
-					&vs[fvs],
-					&ns[fvs],
-					&forces[id]
-				);
-			} else {
-				sd.register_vert( &vs[fvs] );
-				sd.register_normal( &ns[fvs] );
-			}
-			
-			--j;
-			++fvs;
-		
-		}
-		
-	}
-	
-	// debugging ligaments
-	Vector<Vector3>& vs_liga = imm->chunks[2].vertices;
-	for ( uint32_t i = 0; i < dots_num; ++i ) {
-		dots[i].register_vert( &vs_liga[(i*2)+1] );
-	}
-	
-	fibers = new SkinFiber[fibers_num + dots_num];
-	uint32_t fibid = 0;
-	
-	fibers = new SkinFiber[fibers_num];
-	for( int i = 0; i < fibers_num; ++i ) {
-		Vector<int>& vs = raw.edges[i];
-		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
-		if ( vs[2] != 0 ) {
-			fibers[fibid].musclise(
-				fibers[fibid].init_rest_len() * 0.2,
-				fibers[fibid].init_rest_len() * 1.4,
-				0.5, 0
-				);
-		}
-	}
-	// generate ligaments
-	for( int i = 0; i < dots_num; ++i, ++fibid ) {
-		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
-	}
-*/
-		
 }
 
 void Skin::unbind_root() {
@@ -425,51 +363,63 @@ void Skin::update( const float& delta ) {
 	}
 	
 	bind_root();
+}
+
+
+void Skin::set_ligament_strength( const float& s ) {
 	
-/*	
-	if ( imm == 0 || dots == 0 ) {
-		std::cout << "Skin::update, object not ready for update!" << std::endl;
-		return;
+	ligament_strength = s;
+	
+	if ( !fibers ) return;
+	
+	for( int i = 0; i < fibers_num; ++i ) {
+		if ( fibers[i].type() == SkinFiber::sf_LIGAMENT ) {
+			fibers[i].stiffness( ligament_strength );
+		}
 	}
 	
-	for( uint32_t i = 0; i < dots_num; ++i ) {
-		
-		dots[i].update( delta );
-		
-	}
+}
+
+float Skin::get_ligament_strength() const {
 	
-	for( uint32_t i = 0; i < fibers_num; ++i ) {
-		
-		fibers[i].update( delta );
-		
-	}
+	return ligament_strength;
 	
-	imm->instance_change_notify();
-*/
 }
 
 void Skin::set_main_material( const Ref<Material> &material ) {
+	
 	main_material = material;
+	
 }
 
 Ref<Material> Skin::get_main_material() const {
+	
 	return main_material;
+	
 }
 
 void Skin::set_fiber_material( const Ref<Material> &material ) {
+	
 	fiber_material = material;
+	
 }
 
 Ref<Material> Skin::get_fiber_material() const {
+	
 	return fiber_material;
+	
 }
 
 void Skin::set_ligament_material( const Ref<Material> &material ) {
+	
 	ligament_material = material;
+	
 }
 
 Ref<Material> Skin::get_ligament_material() const {
+	
 	return ligament_material;
+	
 }
 
 void Skin::_bind_methods() {
@@ -477,12 +427,20 @@ void Skin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
 	ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
 	
+	ClassDB::bind_method(D_METHOD("set_ligament_strength", "s"), &Skin::set_ligament_strength);
+	ClassDB::bind_method(D_METHOD("get_ligament_strength"), &Skin::get_ligament_strength);
+	
 	ClassDB::bind_method(D_METHOD("set_main_material", "material"), &Skin::set_main_material);
 	ClassDB::bind_method(D_METHOD("get_main_material"), &Skin::get_main_material);
 	ClassDB::bind_method(D_METHOD("set_fiber_material", "material"), &Skin::set_fiber_material);
 	ClassDB::bind_method(D_METHOD("get_fiber_material"), &Skin::get_fiber_material);
 	ClassDB::bind_method(D_METHOD("set_ligament_material", "material"), &Skin::set_ligament_material);
 	ClassDB::bind_method(D_METHOD("get_ligament_material"), &Skin::get_ligament_material);
+	
+	ADD_PROPERTY(PropertyInfo(Variant::REAL, 
+			"ligament_strength", PROPERTY_HINT_RANGE, 
+			"-2.0,2.0,0.00001"), 
+			"set_ligament_strength", "get_ligament_strength");
 	
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, 
 			"main_material", PROPERTY_HINT_RESOURCE_TYPE, 

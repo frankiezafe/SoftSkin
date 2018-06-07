@@ -127,6 +127,8 @@ public:
 	
 	const bool& muscle() const;
 	
+	const int& type() const;
+	
 	// setters
 	
 	void rest_len( const float& l );
@@ -167,7 +169,8 @@ private:
 	float _muscle_frequency;
 	
 	void update_muscle( float delta_time );
-	void update_fiber( const Vector3& av, const Vector3& bv );
+	void update_fiber();
+	void update_ligament();
 	
 };
 
