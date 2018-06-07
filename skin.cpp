@@ -44,18 +44,13 @@
 #include "skin.h"
 
 Skin::Skin():
-	imm(0),
 	dots_num(0),
 	fibers_num(0),
 	dots(0),
-	fibers(0),
-	forces(0)
-{
-	
-	im = VisualServer::get_singleton()->immediate_create();
-	set_base(im);
-	
-}
+	forces(0),
+	ligaments_heads(0),
+	fibers(0)
+{}
 
 Skin::~Skin() {
 	
@@ -65,26 +60,17 @@ Skin::~Skin() {
 
 void Skin::purge() {
 	
-	if ( dots != 0 ) {
-		delete [] dots;
-		dots = 0;
-	}
+	if (dots) memdelete_arr( dots );
+	if (forces) memdelete_arr( forces );
+	if (ligaments_heads) memdelete_arr( ligaments_heads );
+	if (fibers) memdelete_arr( fibers );
 	
-	// STD MESH ************
-	
-	if ( fibers != 0 ) {
-		delete [] fibers;
-		fibers = 0;
-	}
-	if ( forces != 0 ) {
-		delete [] forces;
-		forces = 0;
-	}
-	
+	dots = 0;
+	forces = 0;
+	ligaments_heads = 0;
+	fibers = 0;
 	dots_num = 0;
 	fibers_num = 0;
-	
-	VisualServer::get_singleton()->immediate_clear(im);
 	
 }
 
@@ -94,79 +80,96 @@ void Skin::generate( SkinRaw& raw ) {
 	fibers_num = raw.edges.size();
 	uint32_t faces_num = raw.faces.size();
 	
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, 
-		RID());
+	unbind_root();
 	
+	surfaces.resize(2);
+	uint8_t surfid = 0;
+	
+	// ********** MAIN MESH **********
+	surfid = 0;
+	surfaces[surfid].type = Mesh::PRIMITIVE_TRIANGLES;
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		Vector<float>& vert = raw.verts[i];
+		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+		surfaces[surfid].normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+	}
 	for ( uint32_t i = 0; i < faces_num; ++i ) {
-		
 		Vector<int>& fids = raw.faces[i];
 		int j = fids.size() - 1;
-		
 		while( j >= 0 ) {
-			
-			Vector<float>& vert = raw.verts[fids[j]];
-			Vector3 p( vert[1], vert[2], vert[3] );
-			Vector3 n( vert[4], vert[5], vert[6] );
-			if ( i == 0 ) {
-				aabb.position = p;
-				aabb.size = Vector3();
-			} else {
-				aabb.expand_to( p );
-			}
-			VisualServer::get_singleton()->immediate_normal(im, n );
-			VisualServer::get_singleton()->immediate_vertex(im, p );
-			
+			surfaces[surfid].indices.push_back(fids[j]);
 			--j;
-			
 		}
-		
 	}
 	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	
-	// DEBUG MESHES ************
-	// FIBERS ************
-	
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
-		RID());
-	
+	// ********** DEBUG MESH **********
+	surfid = 1;
+	surfaces[surfid].type = Mesh::PRIMITIVE_LINES;
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		Vector<float>& vert = raw.verts[i];
+		surfaces[surfid].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
+		surfaces[surfid].normals.push_back( Vector3( vert[4], vert[5], vert[6] ) );
+	}
 	for ( uint32_t i = 0; i < fibers_num; ++i ) {
 		Vector<int>& vs = raw.edges[i];
-		for ( uint32_t j = 0; j < 2; ++j ) {
-			Vector<float>& vert = raw.verts[vs[j]];
-			Vector3 p( vert[1], vert[2], vert[3] );
-			VisualServer::get_singleton()->immediate_vertex(im, p );
+		surfaces[surfid].indices.push_back(vs[0]);
+		surfaces[surfid].indices.push_back(vs[1]);
+	}
+	
+	// linking all poolvector writters
+	for ( uint32_t i = 0; i < surfaces.size(); ++i ) {
+		surfaces[i].verticesw = surfaces[i].vertices.write();
+		surfaces[i].normalsw = surfaces[i].normals.write();
+		surfaces[i].uvsw = surfaces[i].uvs.write();
+		surfaces[i].indicesw = surfaces[i].indices.write();
+	}
+	
+	// ceation of skin objects
+	dots = memnew_arr( SkinDot , dots_num );
+	forces = memnew_arr( Vector3 , dots_num );
+	
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		forces[i][0] = 0;
+		forces[i][1] = 0;
+		forces[i][2] = 0;
+		dots[i].init(
+			&surfaces[0].verticesw[i],
+			&surfaces[0].normalsw[i],
+			&forces[i]
+		);
+	}
+	
+	fibers = memnew_arr( SkinFiber , fibers_num + dots_num );
+	ligaments_heads = memnew_arr( Vector3 , dots_num );
+	uint32_t fibid = 0;
+	
+	// generate fibers and tensors
+	for( int i = 0; i < fibers_num; ++i ) {
+		Vector<int>& vs = raw.edges[i];
+		fibers[fibid].init( &dots[vs[0]], &dots[vs[1]] );
+		if ( vs[2] != 0 ) {
+			fibers[fibid].musclise(
+				fibers[fibid].init_rest_len() * 0.2,
+				fibers[fibid].init_rest_len() * 1.4,
+				0.5, 0
+			);
 		}
+		++fibid;
+	}
+	// generate ligaments
+	for( int i = 0; i < dots_num; ++i, ++fibid ) {
+		ligaments_heads[i] = dots[i].vert().ref();
+		fibers[fibid].init( &ligaments_heads[i], &dots[i] );
+		++fibid;
 	}
 	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	// LIGAMENTS ************
-	VisualServer::get_singleton()->immediate_begin(
-		im, 
-		(VisualServer::PrimitiveType) Mesh::PRIMITIVE_LINES, 
-		RID());
-	
-	for ( uint32_t i = 0; i < dots_num; ++i ) {
-		Vector<float>& vert = raw.verts[i];
-		Vector3 p( vert[1], vert[2], vert[3] );
-		VisualServer::get_singleton()->immediate_vertex(im, p );
-		VisualServer::get_singleton()->immediate_vertex(im, p );
-	}
-	
-	VisualServer::get_singleton()->immediate_end(im);
-	
-	retrieve_immediate();
+	bind_root();
 	
 	// data has been pushed in godot engine,
 	// we can now generate custom object that 
 	// will interacts with it
-	
+
+/*
 	dots = new SkinDot[dots_num];
 	forces = new Vector3[dots_num];
 	Vector<Vector3>& vs = imm->chunks[0].vertices;
@@ -226,8 +229,57 @@ void Skin::generate( SkinRaw& raw ) {
 	for( int i = 0; i < dots_num; ++i, ++fibid ) {
 		fibers[fibid].init( &( dots[i].vert().ref() ), &dots[i] );
 	}
-	
+*/
 		
+}
+
+void Skin::unbind_root() {
+
+	set_base(RID());
+	root_mesh.unref(); //byebye root mesh
+
+}
+
+void Skin::bind_root() {
+	
+	root_mesh.instance();
+	
+	for ( uint32_t i = 0; i < surfaces.size(); ++i ) {
+		
+		surfaces[i].verticesw = PoolVector<Vector3>::Write();
+		surfaces[i].normalsw = PoolVector<Vector3>::Write();
+		surfaces[i].uvsw = PoolVector<Vector2>::Write();
+		surfaces[i].indicesw = PoolVector<int>::Write();
+		
+		int idx = root_mesh->get_surface_count();
+		switch( surfaces[i].type ) {
+			case Mesh::PRIMITIVE_TRIANGLES:
+			{
+				Array array;
+				array.resize(Mesh::ARRAY_MAX);
+				array[Mesh::ARRAY_VERTEX] = surfaces[i].vertices;
+				array[Mesh::ARRAY_NORMAL] = surfaces[i].normals;
+				//array[Mesh::ARRAY_TEX_UV] = surfaces[i].uvs;
+				array[Mesh::ARRAY_INDEX] = surfaces[i].indices;
+				root_mesh->add_surface_from_arrays( Mesh::PRIMITIVE_TRIANGLES, array);
+			}
+			break;
+			case Mesh::PRIMITIVE_LINES:
+			{
+				Array array;
+				array.resize(Mesh::ARRAY_MAX);
+				array[Mesh::ARRAY_VERTEX] = surfaces[i].vertices;
+				array[Mesh::ARRAY_INDEX] = surfaces[i].indices;
+				root_mesh->add_surface_from_arrays( Mesh::PRIMITIVE_LINES, array);
+			}
+			break;
+		}
+		root_mesh->surface_set_material(idx, surfaces[i].material);
+		
+	}
+	
+	set_base(root_mesh->get_rid());
+	
 }
 
 void Skin::parse( const String& path ) {
@@ -345,6 +397,19 @@ PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
 
 void Skin::update( const float& delta ) {
 	
+	unbind_root();
+	
+	for( uint32_t i = 0; i < dots_num; ++i ) {
+		dots[i].update( delta );
+	}
+	
+	for( uint32_t i = 0; i < fibers_num; ++i ) {
+		fibers[i].update( delta );
+	}
+	
+	bind_root();
+	
+/*	
 	if ( imm == 0 || dots == 0 ) {
 		std::cout << "Skin::update, object not ready for update!" << std::endl;
 		return;
@@ -363,7 +428,7 @@ void Skin::update( const float& delta ) {
 	}
 	
 	imm->instance_change_notify();
-	
+*/
 }
 
 void Skin::_bind_methods() {

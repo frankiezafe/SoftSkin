@@ -55,9 +55,9 @@
 #include "scene/resources/mesh.h"
 #include "drivers/gles3/rasterizer_storage_gles3.h"
 
-class Skin: public GeometryInstance {
+class Skin: public VisualInstance {
 	
-	GDCLASS(Skin, GeometryInstance);
+	GDCLASS(Skin, VisualInstance);
 	
 	// decompression data
 	struct SkinRaw {
@@ -68,6 +68,20 @@ class Skin: public GeometryInstance {
 		Vector< Vector<int> > edges;
 		Vector< Vector<int> > faces;
 		SkinRaw() : vpass(false), epass(false), fpass(false) {}
+	};
+	
+	struct ShapeUpdateSurface {
+		int type;
+		PoolVector<Vector3> vertices;
+		PoolVector<Vector3> normals;
+		PoolVector<int> indices;
+		PoolVector<Vector2> uvs;
+		Ref<Material> material;
+		int last_added;
+		PoolVector<Vector3>::Write verticesw;
+		PoolVector<Vector3>::Write normalsw;
+		PoolVector<int>::Write indicesw;
+		PoolVector<Vector2>::Write uvsw;
 	};
 	
 public:
@@ -83,9 +97,7 @@ public:
 	void update(const float& delta_time );
 	
 	// mandatory methods for GeometryInstance
-	
 	virtual AABB get_aabb() const;
-	
 	virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
 	
 protected:
@@ -96,24 +108,33 @@ protected:
 	
 private:
 	
-	RID im;
-	RasterizerStorageGLES3::Immediate* imm;
+// 	RID im;
+// 	RasterizerStorageGLES3::Immediate* imm;
 	
 	uint32_t dots_num;
 	uint32_t fibers_num;
+	uint32_t faces_num;
 	SkinDot* dots;
-	SkinFiber* fibers;
 	Vector3* forces;
+	Vector3* ligaments_heads;
+	SkinFiber* fibers;
+	
+	Ref<ArrayMesh> root_mesh;
+	Vector<ShapeUpdateSurface> surfaces;
 	
 	void purge();
 	
 	void generate( SkinRaw& raw );
 	
-	void retrieve_immediate() {
-		
-		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
-		
-	}
+	void unbind_root();
+	
+	void bind_root();
+	
+// 	void retrieve_immediate() {
+// 		
+// 		imm = (RasterizerStorageGLES3::Immediate*) im.get_data();
+// 		
+// 	}
 	
 };
 

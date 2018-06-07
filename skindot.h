@@ -54,7 +54,8 @@
 
 class SkinDot {
 	
-	// decompression data
+	// in case there is more than 1 usage of the vertice
+	// in the mesh
 	struct SkinDotMirror {
 		
 		bool empty;
@@ -81,11 +82,11 @@ class SkinDot {
 		
 		void sync() {
 			
-			assert( src != 0 );
-			
 			if ( empty ) {
 				return;
 			}
+			
+			assert( src != 0 );
 			
 			std::vector< Vector3* >::iterator it = vec3s.begin();
 			for( ; it < vec3s_end; ++it ) {
