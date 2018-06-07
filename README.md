@@ -10,6 +10,10 @@ First prototype demo (openframeworks):
 * [soft skin #002](https://vimeo.com/255073574)
 * [soft skin #001](https://vimeo.com/254765875)
 
+## demo project
+
+* https://gitlab.com/frankiezafe/SoftSkin-demo
+
 ## remotes
 
 * https://gitlab.com/frankiezafe/SoftSkin - origin
