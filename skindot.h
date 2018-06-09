@@ -134,6 +134,8 @@ public:
 	
 	void damping( const float& d );
 	
+	void gravity( Vector3* g );
+	
 	void update( const float& delta_time );
 	
 	const bool is_initialised() const {
@@ -162,6 +164,7 @@ private:
 	Vector3ptr _vert;
 	Vector3ptr _normal;
 	Vector3ptr _force;
+	Vector3* _gravity;
 	float _damping;
 	uint16_t _kicks;
 	

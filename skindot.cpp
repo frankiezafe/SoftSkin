@@ -45,11 +45,13 @@
 #include "skindot.h"
 
 SkinDot::SkinDot() : 
-	_inititalised(false) 
+	_inititalised(false),
+	_gravity(0)
 {}
 
 SkinDot::SkinDot( const float& x, const float& y, const float& z) : 
-	_inititalised(false) 
+	_inititalised(false) ,
+	_gravity(0)
 {
 	
 	init( x,y,z );
@@ -57,7 +59,8 @@ SkinDot::SkinDot( const float& x, const float& y, const float& z) :
 }
 
 SkinDot::SkinDot( Vector3* vert, Vector3* normal, Vector3* force ) : 
-	_inititalised(false) 
+	_inititalised(false),
+	_gravity(0)
 {
 	
 	init( vert, normal, force );
@@ -175,6 +178,12 @@ void SkinDot::damping( const float& d ) {
 	
 }
 
+void SkinDot::gravity( Vector3* g ) {
+	
+	_gravity = g;
+	
+}
+
 void SkinDot::operator = ( const SkinDot& src ) {
 	
 	_vert = src.vert();
@@ -194,6 +203,9 @@ void SkinDot::update( const float& delta_time ) {
 	Vector3 consumed = _force.ref() * _damping / sqrt(_kicks - 1);
 	_force -= consumed;
 	_vert += consumed;
+	if ( _gravity ) {
+		_vert += (*_gravity) * delta_time;
+	}
 // 	_vert += _normal.ref() * delta_time * 0.1;
 	_kicks = 0;
 	

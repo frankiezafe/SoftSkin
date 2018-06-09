@@ -50,38 +50,19 @@
 #include "skindot.h"
 #include "skinfiber.h"
 
-#include "core/bind/core_bind.h"
-#include "scene/3d/visual_instance.h"
-#include "scene/resources/mesh.h"
-#include "drivers/gles3/rasterizer_storage_gles3.h"
+#include "skincommon.h"
 
 class Skin: public VisualInstance {
 	
 	GDCLASS(Skin, VisualInstance);
 	
-	// decompression data
-	struct SkinRaw {
-		bool vpass;
-		bool epass;
-		bool fpass;
-		Vector< Vector<float> > verts;
-		Vector< Vector<int> > edges;
-		Vector< Vector<int> > faces;
-		SkinRaw() : vpass(false), epass(false), fpass(false) {}
-	};
-	
-	struct ShapeUpdateSurface {
-		int type;
-		PoolVector<Vector3> vertices;
-		PoolVector<Vector3> normals;
-		PoolVector<int> indices;
-		PoolVector<Vector2> uvs;
-		Ref<Material> material;
-		int last_added;
-		PoolVector<Vector3>::Write verticesw;
-		PoolVector<Vector3>::Write normalsw;
-		PoolVector<int>::Write indicesw;
-		PoolVector<Vector2>::Write uvsw;
+	enum surface_position_t {
+		surf_MAIN = 0,
+		surf_FIBER = 1,
+		surf_TENSOR = 2,
+		surf_LIGAMENT = 3,
+		surf_MUSCLE = 4,
+		surf_COUNT = 5
 	};
 	
 public:
@@ -92,25 +73,55 @@ public:
 	
 	void cube();
 	
+	void grid( uint32_t divx, uint32_t divy );
+
 	void parse( const String& path );
 	
 	void update(const float& delta_time );
 	
+	void set_type( const int& type );
+	
+	void set_soft_skin_path( const String& path );
+	
 	void set_ligament_strength( const float& s );
+	
+	void set_main_display( const bool& display );
+	void set_fiber_display( const bool& display );
+	void set_tensor_display( const bool& display );
+	void set_ligament_display( const bool& display );
+	void set_muscle_display( const bool& display );
 	
 	void set_main_material( const Ref<Material> &material );
 	
 	void set_fiber_material( const Ref<Material> &material );
 	
+	void set_tensor_material( const Ref<Material> &material );
+	
 	void set_ligament_material( const Ref<Material> &material );
 	
+	void set_muscle_material( const Ref<Material> &material );
+	
 	float get_ligament_strength() const;
+	
+	int get_type() const;
+	
+	String get_soft_skin_path() const;
+	
+	bool get_main_display() const;
+	bool get_fiber_display() const;
+	bool get_tensor_display() const;
+	bool get_ligament_display() const;
+	bool get_muscle_display() const;
 	
 	Ref<Material> get_main_material() const;
 	
 	Ref<Material> get_fiber_material() const;
 	
+	Ref<Material> get_tensor_material() const;
+	
 	Ref<Material> get_ligament_material() const;
+	
+	Ref<Material> get_muscle_material() const;
 	
 	// mandatory methods for VisualInstance
 	virtual AABB get_aabb() const;
@@ -124,7 +135,7 @@ protected:
 	AABB aabb;
 	
 private:
-	
+		
 	uint32_t dots_num;
 	uint32_t fibers_num;
 	uint32_t faces_num;
@@ -133,14 +144,25 @@ private:
 	Vector3** ligaments_heads;
 	SkinFiber* fibers;
 	
+	Vector3 _gravity;
 	float ligament_strength;
-	
+		
 	Ref<ArrayMesh> root_mesh;
 	Vector<ShapeUpdateSurface> surfaces;
 	
+	String soft_skin_path;
+	
+	bool main_display;
+	bool fiber_display;
+	bool tensor_mdisplay;
+	bool ligament_display;
+	bool muscle_display;
+	
 	Ref<Material> main_material;
 	Ref<Material> fiber_material;
+	Ref<Material> tensor_material;
 	Ref<Material> ligament_material;
+	Ref<Material> muscle_material;
 	
 	void purge();
 	

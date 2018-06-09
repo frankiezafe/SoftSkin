@@ -229,7 +229,7 @@ void SkinFiber::update_ligament() {
 	_current_len = _dir.length();
 	_dir.normalize();
 	
-	_tail->push( _dir * _stiffness );
+	_tail->push( -_dir * _stiffness * _current_len * _current_len );
 	
 	_middle = av + _dir * _current_len * 0.5;
 	
