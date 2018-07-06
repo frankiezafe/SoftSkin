@@ -47,19 +47,17 @@
 
 #include "skindot.h"
 
+enum skin_fiber_t : uint8_t {
+	sf_UNDEFINED, 	// type before assignation
+	sf_FIBER, 		// a fiber connecting 2 skindots, passive behaviour
+	sf_TENSOR, 		// a fiber connecting 2 skindots, able to contract
+	sf_LIGAMENT,	// a fiber connecting 1 skindots to a fixed 3d position, passive behaviour
+	sf_MUSCLE		// a fiber connecting 1 skindots to a fixed 3d position, able to contract
+};
+
 class SkinFiber {
 	
 public:
-	
-	enum skin_fiber_t {
-		
-		sf_UNDEFINED, 	// type before assignation
-		sf_FIBER, 		// a fiber connecting 2 skindots, passive behaviour
-		sf_TENSOR, 		// a fiber connecting 2 skindots, able to contract
-		sf_LIGAMENT,	// a fiber connecting 1 skindots to a fixed 3d position, passive behaviour
-		sf_MUSCLE		// a fiber connecting 1 skindots to a fixed 3d position, able to contract
-		
-	};
 	
 	static std::string print_type( const skin_fiber_t& t ) {
 		switch( t ) {
@@ -127,7 +125,9 @@ public:
 	
 	const bool& muscle() const;
 	
-	const int& type() const;
+	const skin_fiber_t& type() const;
+	
+	const float& muscle_frequency() const;
 	
 	// setters
 	
@@ -139,7 +139,7 @@ public:
 	
 	void muscle_min_max( float min, float max );
 	
-	void muscle_freq( float f );
+	void muscle_frequency( float f );
 	
 	void muscle_phase_shift( float shift );
 	

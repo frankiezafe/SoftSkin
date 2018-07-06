@@ -59,7 +59,7 @@ struct SkinRaw {
 	Vector< Vector<float> > verts;
 	Vector< Vector<int> > edges;
 	Vector< int > ligaments;
-	Vector< Vector<int> > faces;
+	Vector< Vector<float> > faces;
 	SkinRaw() : vpass(false), epass(false), fpass(false) {}
 };
 

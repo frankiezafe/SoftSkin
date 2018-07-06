@@ -165,7 +165,7 @@ bool SkinFiber::musclise( float min, float max, float freq, float shift ) {
 	_muscle_a = 0;
 	_muscled = true;
 	muscle_min_max(min, max);
-	muscle_freq(freq);
+	muscle_frequency(freq);
 	muscle_phase_shift(shift);
 	
 	return true;
@@ -201,6 +201,16 @@ void SkinFiber::update( const float& delta_time ) {
 	
 }
 
+void SkinFiber::update_muscle(float delta_time) {
+	
+	_muscle_a += delta_time * Math_TAU * 2 * _muscle_frequency;
+	_rest_len = 
+	_muscle_min_len +
+	sin(_muscle_phase_shift + _muscle_a) *
+	_muscle_delta_len;
+	
+}
+
 void SkinFiber::update_fiber() {
 	
 	const Vector3& av = _head_dot->vert().ref();
@@ -229,7 +239,7 @@ void SkinFiber::update_ligament() {
 	_current_len = _dir.length();
 	_dir.normalize();
 	
-	_tail->push( -_dir * _stiffness * _current_len * _current_len );
+	_tail->push( -_dir * _stiffness * _current_len );
 	
 	_middle = av + _dir * _current_len * 0.5;
 	
@@ -301,9 +311,15 @@ const bool& SkinFiber::muscle() const {
 	
 }
 
-const int& SkinFiber::type() const {
+const skin_fiber_t& SkinFiber::type() const {
 	
 	return _type;
+	
+}
+
+const float& SkinFiber::muscle_frequency() const {
+	
+	return _muscle_frequency;
 	
 }
 
@@ -333,7 +349,7 @@ void SkinFiber::muscle_min_max(float min, float max) {
 	
 }
 
-void SkinFiber::muscle_freq(float f) {
+void SkinFiber::muscle_frequency(float f) {
 	
 	_muscle_frequency = f;
 	
@@ -342,14 +358,5 @@ void SkinFiber::muscle_freq(float f) {
 void SkinFiber::muscle_phase_shift(float shift) {
 	
 	_muscle_phase_shift = shift;
-	
-}
-
-void SkinFiber::update_muscle(float delta_time) {
-	
-	_muscle_a += delta_time * Math_TAU * 2 * _muscle_frequency;
-	_rest_len = _muscle_min_len +
-	sin(_muscle_phase_shift + _muscle_a) *
-	_muscle_delta_len;
 	
 }

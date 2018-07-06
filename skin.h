@@ -85,10 +85,20 @@ public:
 	
 	void set_ligament_strength( const float& s );
 	
+	void set_tensor_frequency( const float& s );
+	
+	void set_tensor_mult_min( const float& s );
+	
+	void set_tensor_mult_max( const float& s );
+	
 	void set_main_display( const bool& display );
+	
 	void set_fiber_display( const bool& display );
+	
 	void set_tensor_display( const bool& display );
+	
 	void set_ligament_display( const bool& display );
+	
 	void set_muscle_display( const bool& display );
 	
 	void set_main_material( const Ref<Material> &material );
@@ -103,14 +113,24 @@ public:
 	
 	float get_ligament_strength() const;
 	
+	float get_tensor_frequency() const;
+	
+	float get_tensor_mult_min() const;
+	
+	float get_tensor_mult_max() const;
+	
 	int get_type() const;
 	
 	String get_soft_skin_path() const;
 	
 	bool get_main_display() const;
+	
 	bool get_fiber_display() const;
+	
 	bool get_tensor_display() const;
+	
 	bool get_ligament_display() const;
+	
 	bool get_muscle_display() const;
 	
 	Ref<Material> get_main_material() const;
@@ -146,6 +166,9 @@ private:
 	
 	Vector3 _gravity;
 	float ligament_strength;
+	float tensor_frequency; // 0.5 by default
+	float tensor_mult_min; 	// 0.2 by default
+	float tensor_mult_max; 	// 1.4 by default
 		
 	Ref<ArrayMesh> root_mesh;
 	Vector<ShapeUpdateSurface> surfaces;
@@ -154,7 +177,7 @@ private:
 	
 	bool main_display;
 	bool fiber_display;
-	bool tensor_mdisplay;
+	bool tensor_display;
 	bool ligament_display;
 	bool muscle_display;
 	
@@ -171,6 +194,8 @@ private:
 	void unbind_root();
 	
 	void bind_root();
+	
+	void apply_tensor_mults();
 	
 };
 
