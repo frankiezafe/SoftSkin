@@ -101,6 +101,8 @@ public:
 	
 	void set_muscle_display( const bool& display );
 	
+	void set_local_gravity( const Vector3& g );
+	
 	void set_main_material( const Ref<Material> &material );
 	
 	void set_fiber_material( const Ref<Material> &material );
@@ -133,6 +135,8 @@ public:
 	
 	bool get_muscle_display() const;
 	
+	Vector3 get_local_gravity() const;
+	
 	Ref<Material> get_main_material() const;
 	
 	Ref<Material> get_fiber_material() const;
@@ -164,7 +168,9 @@ private:
 	Vector3** ligaments_heads;
 	SkinFiber* fibers;
 	
+	Vector3 _local_gravity;
 	Vector3 _gravity;
+	bool _update_gravity;
 	float ligament_strength;
 	float tensor_frequency; // 0.5 by default
 	float tensor_mult_min; 	// 0.2 by default

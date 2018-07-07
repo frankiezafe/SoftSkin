@@ -50,7 +50,9 @@ Skin::Skin():
 	forces(0),
 	ligaments_heads(0),
 	fibers(0),
+	_local_gravity( 0,0,0 ),
 	_gravity( 0,0,0 ),
+	_update_gravity(false),
 	ligament_strength(1),
 	tensor_frequency(0.5),
 	tensor_mult_min(0.2),
@@ -169,14 +171,18 @@ void Skin::generate( SkinRaw& raw ) {
 		switch( j ) {
 			// no uv info
 			case 2: // tri
-			case 3: // quad
 				while( j >= 0 ) {
 					surfaces[surf_MAIN].indices.push_back(int(fids[j]));
 					--j;
 				}
 				break;
+				surfaces[surf_MAIN].indices.push_back(int(fids[3]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[2]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[1]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[1]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[0]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[3]));
 			case 8: // tri with uv
-			case 11: // quad with uv
 				{
 					int ids = fids.size()/3;
 					int h = ids-1;
@@ -185,12 +191,19 @@ void Skin::generate( SkinRaw& raw ) {
 						--h;
 					}
 					while( j > ids ) {
-						std::cout << "pushing uv in face " << i << std::endl;
 						surfaces[surf_MAIN].uvs.push_back(Vector2(fids[j-1],fids[j]));
 						j -= 2;
 					}
 				}
 				break;
+			case 3: // quad
+			case 11: // quad with uv
+				surfaces[surf_MAIN].indices.push_back(int(fids[3]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[2]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[1]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[1]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[0]));
+				surfaces[surf_MAIN].indices.push_back(int(fids[3]));
 			default:
 				break;
 		}
@@ -216,8 +229,8 @@ void Skin::generate( SkinRaw& raw ) {
 	
 	// ********** DEBUG TENSORS **********
 	surfaces[surf_TENSOR].type = Mesh::PRIMITIVE_LINES;
-	surfaces[surf_TENSOR].enabled = fiber_display;
-	surfaces[surf_TENSOR].material = fiber_material;
+	surfaces[surf_TENSOR].enabled = tensor_display;
+	surfaces[surf_TENSOR].material = tensor_material;
 	for( uint32_t i = 0; i < dots_num; ++i ) {
 		Vector<float>& vert = raw.verts[i];
 		surfaces[surf_TENSOR].vertices.push_back( Vector3( vert[1], vert[2], vert[3] ) );
@@ -234,8 +247,8 @@ void Skin::generate( SkinRaw& raw ) {
 	// ********** DEBUG LIGAMENTS **********
 	surfaces[surf_LIGAMENT].enabled = false;
 	if ( !raw.ligaments.empty() ) {
-		surfaces[surf_LIGAMENT].enabled = ligament_display;
 		surfaces[surf_LIGAMENT].type = Mesh::PRIMITIVE_LINES;
+		surfaces[surf_LIGAMENT].enabled = ligament_display;
 		surfaces[surf_LIGAMENT].material = ligament_material;
 		uint32_t ligmax = raw.ligaments.size();
 		for( uint32_t i = 0; i < ligmax; ++i ) {
@@ -551,6 +564,13 @@ void Skin::update( const float& delta ) {
 		return;
 	}
 	
+	if ( _update_gravity ) {
+		Vector3 gqaxis;
+		float gqangl;
+		get_global_transform().basis.get_rotation_axis_angle( gqaxis, gqangl );
+		_gravity = _local_gravity.rotated( gqaxis, -gqangl );
+	}
+	
 	unbind_root();
 	
 	for( uint32_t i = 0; i < dots_num; ++i ) {
@@ -809,6 +829,22 @@ void Skin::set_muscle_display( const bool& display ) {
 	
 }
 
+void Skin::set_local_gravity( const Vector3& g ) { 
+	
+	_local_gravity = g;
+	
+	if ( _local_gravity.length() != 0 ) {
+		_update_gravity = true;
+	} else {
+		_update_gravity = false;
+		_gravity.x = 0;
+		_gravity.y = 0;
+		_gravity.z = 0;
+	}
+	
+}
+	
+
 bool Skin::get_main_display() const { return main_display; }
 
 bool Skin::get_fiber_display() const { return fiber_display; }
@@ -818,6 +854,8 @@ bool Skin::get_tensor_display() const { return tensor_display; }
 bool Skin::get_ligament_display() const { return ligament_display; }
 
 bool Skin::get_muscle_display() const { return muscle_display; }
+
+Vector3 Skin::get_local_gravity() const { return _local_gravity; }
 
 void Skin::_bind_methods() {
 	
@@ -863,6 +901,10 @@ void Skin::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_muscle_display", "display"), &Skin::set_muscle_display);
 	ClassDB::bind_method(D_METHOD("get_muscle_display"), &Skin::get_muscle_display);
 	
+	
+	ClassDB::bind_method(D_METHOD("set_local_gravity", "g"), &Skin::set_local_gravity);
+	ClassDB::bind_method(D_METHOD("get_local_gravity"), &Skin::get_local_gravity);
+	
 	ADD_GROUP("Configuration", "conf_");
 	
 	ADD_PROPERTY(PropertyInfo(Variant::INT,
@@ -875,6 +917,11 @@ void Skin::_bind_methods() {
 			"conf_softskin file", PROPERTY_HINT_NONE), 
 			"set_soft_skin_path", 
 			"get_soft_skin_path");
+	
+	ADD_PROPERTY(PropertyInfo(Variant::VECTOR3,
+			"conf_gravity", PROPERTY_HINT_NONE), 
+			"set_local_gravity", 
+			"get_local_gravity");
 	
 	ADD_PROPERTY(PropertyInfo(Variant::REAL, 
 			"conf_ligament_strength", PROPERTY_HINT_RANGE, 
