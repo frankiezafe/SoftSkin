@@ -46,37 +46,82 @@
 #ifndef SKINCOMMON_H
 #define SKINCOMMON_H
 
+#include <iostream>
+
 #include "core/bind/core_bind.h"
 #include "scene/3d/visual_instance.h"
 #include "scene/resources/mesh.h"
 #include "drivers/gles3/rasterizer_storage_gles3.h"
 
 // decompression data
+
 struct SkinRaw {
-	bool vpass;
-	bool epass;
-	bool fpass;
-	Vector< Vector<float> > verts;
-	Vector< Vector<int> > edges;
-	Vector< int > ligaments;
-	Vector< Vector<float> > faces;
-	SkinRaw() : vpass(false), epass(false), fpass(false) {}
+    bool vpass;
+    bool epass;
+    bool fpass;
+    Vector< Vector<float> > verts;
+    Vector< Vector<int> > edges;
+    Vector< int > ligaments;
+    Vector< Vector<float> > faces;
+
+    SkinRaw() : vpass(false), epass(false), fpass(false) {
+    }
 };
 
 struct ShapeUpdateSurface {
-	int type;
-	bool enabled;
-	PoolVector<Vector3> vertices;
-	PoolVector<Vector3> normals;
-	PoolVector<int> indices;
-	PoolVector<Vector2> uvs;
-	Ref<Material> material;
-	int last_added;
-	PoolVector<Vector3>::Write verticesw;
-	PoolVector<Vector3>::Write normalsw;
-	PoolVector<int>::Write indicesw;
-	PoolVector<Vector2>::Write uvsw;
-	ShapeUpdateSurface() : type(0), enabled(false) {}
+    int type;
+    bool enabled;
+    PoolVector<Vector3> vertices;
+    PoolVector<Vector3> normals;
+    PoolVector<int> indices;
+    PoolVector<Vector2> uvs;
+    Ref<Material> material;
+    int last_added;
+    PoolVector<Vector3>::Write verticesw;
+    PoolVector<Vector3>::Write normalsw;
+    PoolVector<int>::Write indicesw;
+    PoolVector<Vector2>::Write uvsw;
+
+    ShapeUpdateSurface() : type(0), enabled(false) {
+    }
+};
+
+enum skin_notifier_t {
+    sn_UNDEFINED,
+    sn_SKIN,
+    sn_SERVER    
+};
+
+enum skin_notification_t {
+    sno_UNDEFINED,
+    sno_NOTIFIER_DOWN,
+    sno_SKIN_CREATED,
+    sno_SKIN_MOVED,
+    sno_SKIN_DELETED,
+    sno_SERVER_CREATED,
+    sno_SERVER_MOVED,
+    sno_SERVER_DELETED
+};
+
+class SkinNotifierListener {
+    
+public:
+    
+    SkinNotifierListener():
+    _skl_type(sn_UNDEFINED) {}
+    
+    const skin_notifier_t& skl_type() const {
+        return _skl_type;
+    }
+    
+    virtual void skin_notification(const skin_notification_t& what) {
+        std::cout << "SkinNotifierListener::skin_notification " << what << std::endl;
+    }
+    
+protected:
+    
+    skin_notifier_t _skl_type;
+    
 };
 
 #endif // SKINCOMMON_H
