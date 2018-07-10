@@ -2,4 +2,5 @@
 *.pyc
 *.kdev4
 .kdev4/*
+nbproject/*
 *.tmp
