@@ -138,7 +138,7 @@ public:
 
     void gravity(Vector3* g);
 
-    void update(const float& delta_time);
+    const Vector3& update(const float& delta_time);
 
     const bool is_initialised() const {
 

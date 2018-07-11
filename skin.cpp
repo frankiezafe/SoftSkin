@@ -342,19 +342,19 @@ void Skin::generate(SkinRaw& raw) {
     }
     fibers_num = fibmax;
 
-    std::cout << "Skin::generate report" << std::endl <<
-            "\traw verts: " << raw.verts.size() << std::endl <<
-            "\traw edges: " << raw.edges.size() << std::endl <<
-            "\traw ligaments: " << raw.ligaments.size() << std::endl <<
-            "\traw faces: " << raw.faces.size() << std::endl <<
-            "\tsurfaces: " << surfaces.size() << std::endl;
-    for (int i = 0; i < surfaces.size(); ++i) {
-        std::cout << "\tsurfaces[" << i << "] vertices: " << surfaces[i].vertices.size() << std::endl;
-        std::cout << "\tsurfaces[" << i << "] normals: " << surfaces[i].normals.size() << std::endl;
-        std::cout << "\tsurfaces[" << i << "] indices: " << surfaces[i].indices.size() << std::endl;
-        std::cout << "\tsurfaces[" << i << "] uvs: " << surfaces[i].uvs.size() << std::endl;
-        std::cout << "\tsurfaces[" << i << "] type: " << surfaces[i].type << std::endl;
-    }
+//    std::cout << "Skin::generate report" << std::endl <<
+//            "\traw verts: " << raw.verts.size() << std::endl <<
+//            "\traw edges: " << raw.edges.size() << std::endl <<
+//            "\traw ligaments: " << raw.ligaments.size() << std::endl <<
+//            "\traw faces: " << raw.faces.size() << std::endl <<
+//            "\tsurfaces: " << surfaces.size() << std::endl;
+//    for (int i = 0; i < surfaces.size(); ++i) {
+//        std::cout << "\tsurfaces[" << i << "] vertices: " << surfaces[i].vertices.size() << std::endl;
+//        std::cout << "\tsurfaces[" << i << "] normals: " << surfaces[i].normals.size() << std::endl;
+//        std::cout << "\tsurfaces[" << i << "] indices: " << surfaces[i].indices.size() << std::endl;
+//        std::cout << "\tsurfaces[" << i << "] uvs: " << surfaces[i].uvs.size() << std::endl;
+//        std::cout << "\tsurfaces[" << i << "] type: " << surfaces[i].type << std::endl;
+//    }
 
     bind_root();
 
@@ -592,7 +592,12 @@ void Skin::update(const float& delta) {
     unbind_root();
 
     for (uint32_t i = 0; i < dots_num; ++i) {
-        dots[i].update(delta);
+        if ( i == 0 ) {
+            aabb.position = dots[i].update(delta);
+            aabb.size = Vector3(0,0,0);
+        } else {
+            aabb.expand_to( dots[i].update(delta) );
+        }
     }
 
     for (uint32_t i = 0; i < fibers_num; ++i) {

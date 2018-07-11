@@ -192,7 +192,7 @@ void SkinDot::operator=(const SkinDot& src) {
 
 }
 
-void SkinDot::update(const float& delta_time) {
+const Vector3& SkinDot::update(const float& delta_time) {
 
     if (_kicks < 2) {
         _kicks = 2;
@@ -210,6 +210,8 @@ void SkinDot::update(const float& delta_time) {
     mirror_verts.sync();
     mirror_normals.sync();
     mirror_forces.sync();
+    
+    return _vert.ref();
 
 }
 
