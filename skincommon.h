@@ -48,6 +48,7 @@
 
 #include <iostream>
 #include <limits>
+#include <map>
 
 #include "core/bind/core_bind.h"
 #include "scene/3d/visual_instance.h"
@@ -125,42 +126,70 @@ protected:
 
 };
 
-class SkinRay {
-    
+class SkinRayResult {
 public:
     
-    Vector3 world_position;
+    void* skin_ptr;
+    uint32_t dot_index;
     real_t distance_to_origin;
     real_t dot_to_ray;
     real_t distance_to_ray;
-    void* skin_ptr;
-    uint32_t dot_id;
-    bool success;
-
-    SkinRay() : 
-    distance_to_origin(0), 
-    dot_to_ray(0), 
-    distance_to_ray(0),
+    real_t influence;
+    
+    SkinRayResult() : 
     skin_ptr(0),
-    dot_id(std::numeric_limits<uint32_t>::max()),
-    success(false)
-    {
-    }
-
-    void operator<<( const SkinRay& src ) {
+    dot_index( std::numeric_limits<uint32_t>::max() ),
+    distance_to_origin(0),
+    dot_to_ray(0),
+    distance_to_ray(0),
+    influence(0) {}
+    
+    void operator=( const SkinRayResult& src ) {
+        skin_ptr = src.skin_ptr;
+        dot_index = src.dot_index;
         distance_to_origin = src.distance_to_origin;
         dot_to_ray = src.dot_to_ray;
         distance_to_ray = src.distance_to_ray;
+        influence = src.influence;
     }
     
-    void operator=( const SkinRay& src ) {
-        world_position = src.world_position;
-        distance_to_origin = src.distance_to_origin;
-        dot_to_ray = src.dot_to_ray;
-        distance_to_ray = src.distance_to_ray;
-        skin_ptr = src.skin_ptr;
-        dot_id = src.dot_id;
-        success = src.success;
+};
+
+typedef std::vector<SkinRayResult> skinresult_vector;
+typedef skinresult_vector::iterator skinresult_vector_iterator;
+typedef std::map<void*, skinresult_vector> skinray_map;
+typedef skinray_map::iterator skinray_map_iterator;
+
+class SkinRay {
+public:
+
+    Vector3 world_position;
+    bool success;
+
+    /* This map stores skin dots tests per Skin 
+     * It will be analysed by the server once all skins have been visited.
+     */
+    skinray_map results;
+    
+    SkinRayResult* closest_result;
+
+    SkinRay() :
+    success(false),
+    closest_result(0)
+    {
+    }
+    
+    ~SkinRay() {
+        reset();
+    }
+    
+    void reset() {
+        success = false;
+        if ( closest_result ) {
+            delete closest_result;
+        }
+        closest_result = 0;
+        results.clear();
     }
 
 };

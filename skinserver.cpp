@@ -84,10 +84,10 @@ void SkinServer::_bind_methods() {
 
     ClassDB::bind_method(D_METHOD("set_UID", "i"), &SkinServer::set_UID);
     ClassDB::bind_method(D_METHOD("get_UID"), &SkinServer::get_UID);
-    
-    ClassDB::bind_method(D_METHOD("hit","from","to","radius"), &SkinServer::hit);
+
+    ClassDB::bind_method(D_METHOD("hit", "from", "to", "radius"), &SkinServer::hit);
     ClassDB::bind_method(D_METHOD("hit_point"), &SkinServer::hit_point);
-    ClassDB::bind_method(D_METHOD("drag_point","from","to"), &SkinServer::drag_point);
+    ClassDB::bind_method(D_METHOD("drag_point", "from", "to"), &SkinServer::drag_point);
 
     ADD_GROUP("SkinServer", "skinserver_");
 
@@ -149,7 +149,7 @@ void SkinServer::skin_notification(const skin_notification_t& what) {
         case sno_NOTIFIER_DOWN:
             _skins.clear();
             break;
-            
+
         case sno_SKIN_CREATED:
         case sno_SKIN_MOVED:
         case sno_SKIN_DELETED:
@@ -161,56 +161,115 @@ void SkinServer::skin_notification(const skin_notification_t& what) {
 }
 
 const Vector3& SkinServer::hit_point() const {
-    
+
     return _hit_point.world_position;
-    
+
 }
 
-const Vector3& SkinServer::drag_point( const Vector3& from, const Vector3& to ) {
-    
-    if ( !_hit_point.skin_ptr ) {
-        return _hit_point.world_position;
+const Vector3& SkinServer::drag_point(const Vector3& from, const Vector3& to) {
+
+    if (_hit_point.closest_result) {
+
+        std::cout << "SkinServer::drag_point: " <<
+                _hit_point.closest_result->skin_ptr << std::endl;
+        
+        ((Skin*) _hit_point.closest_result->skin_ptr)->ray_world_position(
+                from, to, _hit_point);
+
+        skinray_map_iterator itr = _hit_point.results.begin();
+        skinray_map_iterator itre = _hit_point.results.end();
+
+        for (; itr != itre; ++itr) {
+
+            if (itr->second.empty()) {
+                continue;
+            }
+            ((Skin*) itr->first)->drag(_hit_point);
+
+        }
+
     }
-    
-    ((Skin*) _hit_point.skin_ptr)->drag( from, to, _hit_point );
+
     return _hit_point.world_position;
-    
+
 }
 
 bool SkinServer::hit(
         const Vector3& from,
         const Vector3& to,
         const real_t& radius) {
-    
-    if ( _skins.empty() ) {
+
+    if (_skins.empty()) {
         return false;
     }
-    
+
     std::vector< Skin* >::iterator it = _skins.begin();
     std::vector< Skin* >::iterator ite = _skins.end();
-    
-    SkinRay ray;
-    Skin* _sel = 0;
-            
-    for ( ; it != ite; ++it ) {
-        ray.success = false;
-        (*it)->hit( from, to, radius, ray );
-        if ( ray.success ) {
-            ray.skin_ptr = (*it);
-        }
-        
+
+    _hit_point.reset();
+
+    for (; it != ite; ++it) {
+        (*it)->hit(from, to, radius, _hit_point);
     }
-    
-    _hit_point = ray;
-        
-//        std::cout << "SkinServer::hit, success " << 
-//                _sel << " at dot " <<
-//                ray.dot_id << ", position: " <<
-//                ray.world_position.x << ", " <<
-//                ray.world_position.y << ", " <<
-//                ray.world_position.z << 
-//                std::endl;
-    
-    return _hit_point.skin_ptr != 0;
-    
+
+    _hit_point.success = _hit_point.closest_result != 0;
+
+    if (_hit_point.success) {
+
+        // removal of too far of the ray.closest_result
+        skinray_map_iterator itr = _hit_point.results.begin();
+        skinray_map_iterator itre = _hit_point.results.end();
+
+        for (; itr != itre; ++itr) {
+
+            skinresult_vector valids;
+            skinresult_vector_iterator itrv = itr->second.begin();
+            skinresult_vector_iterator itrve = itr->second.end();
+
+            for (; itrv != itrve; ++itrv) {
+
+                SkinRayResult& srr = (*itrv);
+
+                std::cout << "testing point: " <<
+                            srr.skin_ptr << " : " <<
+                            srr.dot_index << ", " <<
+                            srr.distance_to_origin << " <> " << 
+                            _hit_point.closest_result->distance_to_origin << 
+                            std::endl;
+
+                if (
+                        srr.distance_to_origin -
+                        _hit_point.closest_result->distance_to_origin <=
+                        radius
+                        ) {
+
+                    srr.influence = 1 - (
+                            (srr.distance_to_ray / radius) *
+                            (
+                            srr.distance_to_origin -
+                            _hit_point.closest_result->distance_to_origin
+                            ) / radius
+                            );
+                    
+                    
+
+                    std::cout << "valid point: " <<
+                            srr.skin_ptr << " : " <<
+                            srr.dot_index << ", " <<
+                            srr.influence << std::endl;
+
+                    valids.push_back(srr);
+
+                }
+
+            }
+
+            itr->second.swap(valids);
+
+        }
+
+    }
+
+    return _hit_point.success;
+
 }

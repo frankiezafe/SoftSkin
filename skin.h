@@ -79,9 +79,11 @@ public:
             SkinRay& ray
             );
 
-    void drag(
+    void drag(SkinRay& ray);
+
+    void ray_world_position(
             const Vector3& from,
-            const Vector3& to, 
+            const Vector3& to,
             SkinRay& ray);
 
     void cube();

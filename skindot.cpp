@@ -216,32 +216,12 @@ void SkinDot::update(const float& delta_time) {
 void SkinDot::ray_distance(
         const Vector3& origin,
         const Vector3& ray,
-        SkinRay& result) {
-
-    if ( ray.dot(_normal.ref()) > 0 ) {
-        return;
-    }
+        SkinRayResult& result) {
     
     Vector3 diff = _vert.ref() - origin;
     result.distance_to_origin = diff.length();
     result.dot_to_ray = ray.dot( diff / result.distance_to_origin );
     Vector3 perp = diff - ray * result.dot_to_ray * result.distance_to_origin;
     result.distance_to_ray = perp.length();
-    
-//    std::cout << "diff: " << 
-//            diff.x << ", " <<
-//            diff.y << ", " <<
-//            diff.z <<  " (" <<
-//            diff.x / ray_len << ", " <<
-//            diff.y / ray_len << ", " <<
-//            diff.z / ray_len << ") " <<
-//            " | distance_to_origin: " <<
-//            result.distance_to_origin <<
-//            " <> " << ray_len <<
-//            " | dot_to_ray : " <<
-//            result.dot_to_ray << " | " <<
-//            " | distance_to_ray : " <<
-//            sqrt( result.distance_to_ray ) <<
-//            std::endl;
 
 }

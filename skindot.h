@@ -160,7 +160,7 @@ public:
     void ray_distance( 
         const Vector3& origin, 
         const Vector3& ray,
-        SkinRay& result
+        SkinRayResult& result
     );
 
 protected:
