@@ -53,7 +53,6 @@
 #include "skinnotifier.h"
 
 class Skin : public VisualInstance, public SkinNotifierListener {
-    
     GDCLASS(Skin, VisualInstance);
 
     enum surface_position_t {
@@ -62,6 +61,7 @@ class Skin : public VisualInstance, public SkinNotifierListener {
         surf_TENSOR = 2,
         surf_LIGAMENT = 3,
         surf_MUSCLE = 4,
+        //        surf_RAY = 5,
         surf_COUNT = 5
     };
 
@@ -70,6 +70,19 @@ public:
     Skin();
 
     ~Skin();
+
+    // interactions
+    void hit(
+            const Vector3& from,
+            const Vector3& to,
+            const real_t& radius,
+            SkinRay& ray
+            );
+
+    void drag(
+            const Vector3& from,
+            const Vector3& to, 
+            SkinRay& ray);
 
     void cube();
 
@@ -153,7 +166,7 @@ public:
     virtual PoolVector<Face3> get_faces(uint32_t p_usage_flags) const;
 
 protected:
-    
+
     void _notification(int p_what);
 
     static void _bind_methods();
@@ -204,7 +217,11 @@ private:
     void bind_root();
 
     void apply_tensor_mults();
-    
+
+    // TEMP
+    Vector3 hit_from;
+    Vector3 hit_to;
+
 };
 
 #endif // SKIN_H

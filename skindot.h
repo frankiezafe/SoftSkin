@@ -52,6 +52,8 @@
 #include "vector3.h"
 #include "vector3ptr.h"
 
+#include "skincommon.h"
+
 class SkinDot {
     
     // in case there is more than 1 usage of the vertice
@@ -154,6 +156,12 @@ public:
                 sd.vert()[0];
 
     }
+    
+    void ray_distance( 
+        const Vector3& origin, 
+        const Vector3& ray,
+        SkinRay& result
+    );
 
 protected:
 

@@ -18,9 +18,8 @@
 #include <algorithm>
 
 #include "skincommon.h"
+#include "skin.h"
 #include "skinnotifier.h"
-
-class Skin;
 
 class SkinServer : public Node, public SkinNotifierListener {
     
@@ -47,7 +46,14 @@ public:
     int get_UID() const;
     
     void skin_notification(const skin_notification_t& what);
-
+    
+    // interactions
+    bool hit( const Vector3& from, const Vector3& to, const real_t& radius );
+    
+    const Vector3& hit_point() const;
+    
+    const Vector3& drag_point( const Vector3& from, const Vector3& to );
+    
 protected:
 
     void _notification(int p_what);
@@ -57,8 +63,8 @@ protected:
 private:
 
     uint32_t _UID;
-    
     bool _valid;
+    SkinRay _hit_point;
     
     std::vector< Skin* > _skins;
         

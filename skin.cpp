@@ -63,19 +63,19 @@ fiber_display(false),
 tensor_display(false),
 ligament_display(false),
 muscle_display(false) {
-    
+
     _skl_type = sn_SKIN;
-    SkinNotifier::subscribe( this );
-    
+    SkinNotifier::subscribe(this);
+
 }
 
 Skin::~Skin() {
 
     purge();
 
-    SkinNotifier::unsubscribe( this );
-    SkinNotifier::notify( sno_SKIN_DELETED );
-    
+    SkinNotifier::unsubscribe(this);
+    SkinNotifier::notify(sno_SKIN_DELETED);
+
 }
 
 void Skin::purge() {
@@ -269,9 +269,17 @@ void Skin::generate(SkinRaw& raw) {
             surfaces[surf_LIGAMENT].indices.push_back((i * 2) + 1);
         }
     }
+    
+    // ********** DEBUG RAY **********
+//    surfaces[surf_RAY].enabled = true;
+//    surfaces[surf_RAY].type = Mesh::PRIMITIVE_LINES;
+//    surfaces[surf_RAY].vertices.push_back(Vector3(0,0,0));
+//    surfaces[surf_RAY].vertices.push_back(Vector3(0,0,0));
+//    surfaces[surf_RAY].indices.push_back(0);
+//    surfaces[surf_RAY].indices.push_back(1);
 
     // linking all poolvector writters
-    for (uint32_t i = 0; i < surfaces.size(); ++i) {
+    for (uint32_t i = 0; i < surf_COUNT; ++i) {
         surfaces[i].verticesw = surfaces[i].vertices.write();
         surfaces[i].normalsw = surfaces[i].normals.write();
         surfaces[i].uvsw = surfaces[i].uvs.write();
@@ -590,6 +598,17 @@ void Skin::update(const float& delta) {
         fibers[i].update(delta);
     }
 
+//    if ( !surfaces.empty() ) {
+//        surfaces[surf_RAY].verticesw = surfaces[surf_RAY].vertices.write();
+//        surfaces[surf_RAY].indicesw = surfaces[surf_RAY].indices.write();
+//        surfaces[surf_RAY].verticesw[0].x = hit_from.x;
+//        surfaces[surf_RAY].verticesw[0].y = hit_from.y;
+//        surfaces[surf_RAY].verticesw[0].z = hit_from.z;
+//        surfaces[surf_RAY].verticesw[1].x = hit_to.x;
+//        surfaces[surf_RAY].verticesw[1].y = hit_to.y;
+//        surfaces[surf_RAY].verticesw[1].z = hit_to.z;
+//    }
+    
     bind_root();
 
 }
@@ -746,6 +765,7 @@ void Skin::set_muscle_material(const Ref<Material> &material) {
     muscle_material = material;
     if (!surfaces.empty()) {
         surfaces[surf_MUSCLE].material = muscle_material;
+//        surfaces[surf_RAY].material = muscle_material;
     }
 
 }
@@ -1022,13 +1042,13 @@ void Skin::_notification(int p_what) {
 
     switch (p_what) {
         case NOTIFICATION_ENTER_TREE:
-            SkinNotifier::notify( sno_SKIN_CREATED );
+            SkinNotifier::notify(sno_SKIN_CREATED);
             break;
         case NOTIFICATION_PARENTED:
         case NOTIFICATION_PATH_CHANGED:
         case NOTIFICATION_MOVED_IN_PARENT:
         case NOTIFICATION_UNPARENTED:
-            SkinNotifier::notify( sno_SKIN_MOVED );
+            SkinNotifier::notify(sno_SKIN_MOVED);
             break;
         default:
             break;
@@ -1036,4 +1056,87 @@ void Skin::_notification(int p_what) {
     }
     //std::cout << p_what << std::endl;
 
+}
+
+void Skin::hit(
+        const Vector3& from,
+        const Vector3& to,
+        const real_t& radius,
+        SkinRay& ray
+) {
+    
+    if (!is_visible()) {
+        return;
+    }
+
+    // transformation of global coords to local
+    Vector3 local_from = to_local(from);
+    Vector3 local_to = to_local(to);
+    
+    Vector3 ray_dir = local_to - local_from;
+    ray_dir.normalize();
+    
+    hit_from = local_from;
+    hit_to = local_to;
+    
+    SkinRay local_ray;
+    real_t closest = 0;
+    uint32_t sel_id = std::numeric_limits<uint32_t>::max();
+
+    for (uint32_t i = 0; i < dots_num; ++i) {
+
+        dots[i].ray_distance(local_from, ray_dir, local_ray);
+        if (
+                local_ray.dot_to_ray >= 0 &&
+                local_ray.distance_to_ray < radius &&
+                (
+                ray.distance_to_ray == 0 ||
+                ray.distance_to_ray > local_ray.distance_to_ray
+                )) {
+            ray << local_ray;
+            sel_id = i;
+        }
+
+    }
+
+    if ( sel_id != std::numeric_limits<uint32_t>::max() ) {
+
+        ray.world_position = to_global(dots[sel_id].vert().ref());
+        ray.dot_id = sel_id;
+        ray.success = true;
+//        std::cout << "We have a winner!!! " <<
+//                sel_id <<
+//                std::endl;
+
+    }
+
+}
+
+void Skin::drag(
+            const Vector3& from,
+            const Vector3& to, 
+            SkinRay& ray
+) {
+
+    if ( ray.dot_id >= dots_num ) {
+        std::cout << "Skin::dra " << ray.dot_id << " <> " << dots_num << std::endl;
+        return;
+    }
+    
+    Vector3 local_from = to_local(from);
+    Vector3 local_to = to_local(to);
+    Vector3 ray_dir = local_to - local_from;
+    ray_dir.normalize();
+    
+    local_to = local_from + ray_dir * ray.distance_to_origin;
+    
+//    std::cout << "local_to " << 
+//            local_to.x << ", " <<
+//            local_to.y << ", " <<
+//            local_to.z << std::endl;
+    
+    dots[ray.dot_id].push( local_to - dots[ray.dot_id].vert().ref() );
+    
+    ray.world_position = to_global( local_to );
+    
 }

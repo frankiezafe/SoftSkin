@@ -47,6 +47,7 @@
 #define SKINCOMMON_H
 
 #include <iostream>
+#include <limits>
 
 #include "core/bind/core_bind.h"
 #include "scene/3d/visual_instance.h"
@@ -89,7 +90,7 @@ struct ShapeUpdateSurface {
 enum skin_notifier_t {
     sn_UNDEFINED,
     sn_SKIN,
-    sn_SERVER    
+    sn_SERVER
 };
 
 enum skin_notification_t {
@@ -104,24 +105,64 @@ enum skin_notification_t {
 };
 
 class SkinNotifierListener {
-    
 public:
-    
-    SkinNotifierListener():
-    _skl_type(sn_UNDEFINED) {}
-    
+
+    SkinNotifierListener() :
+    _skl_type(sn_UNDEFINED) {
+    }
+
     const skin_notifier_t& skl_type() const {
         return _skl_type;
     }
-    
+
     virtual void skin_notification(const skin_notification_t& what) {
-        std::cout << "SkinNotifierListener::skin_notification " << what << std::endl;
+        return;
+    }
+
+protected:
+
+    skin_notifier_t _skl_type;
+
+};
+
+class SkinRay {
+    
+public:
+    
+    Vector3 world_position;
+    real_t distance_to_origin;
+    real_t dot_to_ray;
+    real_t distance_to_ray;
+    void* skin_ptr;
+    uint32_t dot_id;
+    bool success;
+
+    SkinRay() : 
+    distance_to_origin(0), 
+    dot_to_ray(0), 
+    distance_to_ray(0),
+    skin_ptr(0),
+    dot_id(std::numeric_limits<uint32_t>::max()),
+    success(false)
+    {
+    }
+
+    void operator<<( const SkinRay& src ) {
+        distance_to_origin = src.distance_to_origin;
+        dot_to_ray = src.dot_to_ray;
+        distance_to_ray = src.distance_to_ray;
     }
     
-protected:
-    
-    skin_notifier_t _skl_type;
-    
+    void operator=( const SkinRay& src ) {
+        world_position = src.world_position;
+        distance_to_origin = src.distance_to_origin;
+        dot_to_ray = src.dot_to_ray;
+        distance_to_ray = src.distance_to_ray;
+        skin_ptr = src.skin_ptr;
+        dot_id = src.dot_id;
+        success = src.success;
+    }
+
 };
 
 #endif // SKINCOMMON_H
