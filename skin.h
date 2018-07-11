@@ -61,7 +61,6 @@ class Skin : public VisualInstance, public SkinNotifierListener {
         surf_TENSOR = 2,
         surf_LIGAMENT = 3,
         surf_MUSCLE = 4,
-//                surf_RAY = 5,
         surf_COUNT = 5
     };
 

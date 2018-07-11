@@ -109,7 +109,7 @@ void Skin::bind_root() {
 
     root_mesh.instance();
 
-    for (uint32_t i = 0; i < surfaces.size(); ++i) {
+    for (uint32_t i = 0; i < surf_COUNT; ++i) {
 
         surfaces[i].verticesw = PoolVector<Vector3>::Write();
         surfaces[i].normalsw = PoolVector<Vector3>::Write();
@@ -603,17 +603,6 @@ void Skin::update(const float& delta) {
     for (uint32_t i = 0; i < fibers_num; ++i) {
         fibers[i].update(delta);
     }
-
-    //    if ( !surfaces.empty() ) {
-    //        surfaces[surf_RAY].verticesw = surfaces[surf_RAY].vertices.write();
-    //        surfaces[surf_RAY].indicesw = surfaces[surf_RAY].indices.write();
-    //        surfaces[surf_RAY].verticesw[0].x = hit_from.x;
-    //        surfaces[surf_RAY].verticesw[0].y = hit_from.y;
-    //        surfaces[surf_RAY].verticesw[0].z = hit_from.z;
-    //        surfaces[surf_RAY].verticesw[1].x = hit_to.x;
-    //        surfaces[surf_RAY].verticesw[1].y = hit_to.y;
-    //        surfaces[surf_RAY].verticesw[1].z = hit_to.z;
-    //    }
 
     bind_root();
 

@@ -22,6 +22,24 @@ First prototype demo (openframeworks):
 
 ## notes
 
+### 11/07/2018
+
+Integration in godot is becoming stable:
+
+* Skin object can be linked to a server to manage them by group
+* A custom notification system enables reparenting of servers and skins once placed in the scene tree
+* Ray projection are working well
+
+Still to be done:
+
+* importation of uvs (mandatory!)
+* collisions with solid parallelipipeds
+* creation of fibers group:
+* * requires an addon in blender
+* * adaptation of the export format
+* * specific methods to interacts with groups
+* breakeable fibers
+* splittable skins, along seams
 
 ### 06/06/2018
 
