@@ -164,6 +164,7 @@ class SkinRay {
 public:
 
     Vector3 world_position;
+    float world_distance;
     bool success;
 
     /* This map stores skin dots tests per Skin 

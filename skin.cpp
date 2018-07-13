@@ -55,15 +55,19 @@ fibers(0),
 _local_gravity(0, 0, 0),
 _gravity(0, 0, 0),
 _update_gravity(false),
-ligament_strength(1),
-tensor_frequency(0.5),
-tensor_mult_min(0.2),
-tensor_mult_max(1.4),
-main_display(true),
-fiber_display(false),
-tensor_display(false),
-ligament_display(false),
-muscle_display(false) {
+_ligament_strength(1),
+_tensor_frequency(0.5),
+_tensor_mult_min(0.2),
+_tensor_mult_max(1.4),
+_feedback_force(0, 0, 0),
+_feedback_consumed(0, 0, 0),
+_feedback_damping(0.5),
+_feedback_softness(0.5),
+_main_display(true),
+_fiber_display(false),
+_tensor_display(false),
+_ligament_display(false),
+_muscle_display(false) {
 
     _skl_type = sn_SKIN;
     SkinNotifier::subscribe(this);
@@ -167,8 +171,8 @@ void Skin::generate(SkinRaw& raw) {
 
     // ********** MAIN MESH **********
     surfaces[surf_MAIN].type = Mesh::PRIMITIVE_TRIANGLES;
-    surfaces[surf_MAIN].enabled = main_display;
-    surfaces[surf_MAIN].material = main_material;
+    surfaces[surf_MAIN].enabled = _main_display;
+    surfaces[surf_MAIN].material = _main_material;
     for (uint32_t i = 0; i < dots_num; ++i) {
         Vector<float>& vert = raw.verts[i];
         surfaces[surf_MAIN].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
@@ -221,8 +225,8 @@ void Skin::generate(SkinRaw& raw) {
 
     // ********** DEBUG FIBERS **********
     surfaces[surf_FIBER].type = Mesh::PRIMITIVE_LINES;
-    surfaces[surf_FIBER].enabled = fiber_display;
-    surfaces[surf_FIBER].material = fiber_material;
+    surfaces[surf_FIBER].enabled = _fiber_display;
+    surfaces[surf_FIBER].material = _fiber_material;
     for (uint32_t i = 0; i < dots_num; ++i) {
         Vector<float>& vert = raw.verts[i];
         surfaces[surf_FIBER].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
@@ -238,8 +242,8 @@ void Skin::generate(SkinRaw& raw) {
 
     // ********** DEBUG TENSORS **********
     surfaces[surf_TENSOR].type = Mesh::PRIMITIVE_LINES;
-    surfaces[surf_TENSOR].enabled = tensor_display;
-    surfaces[surf_TENSOR].material = tensor_material;
+    surfaces[surf_TENSOR].enabled = _tensor_display;
+    surfaces[surf_TENSOR].material = _tensor_material;
     for (uint32_t i = 0; i < dots_num; ++i) {
         Vector<float>& vert = raw.verts[i];
         surfaces[surf_TENSOR].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
@@ -257,8 +261,8 @@ void Skin::generate(SkinRaw& raw) {
     surfaces[surf_LIGAMENT].enabled = false;
     if (!raw.ligaments.empty()) {
         surfaces[surf_LIGAMENT].type = Mesh::PRIMITIVE_LINES;
-        surfaces[surf_LIGAMENT].enabled = ligament_display;
-        surfaces[surf_LIGAMENT].material = ligament_material;
+        surfaces[surf_LIGAMENT].enabled = _ligament_display;
+        surfaces[surf_LIGAMENT].material = _ligament_material;
         uint32_t ligmax = raw.ligaments.size();
         for (uint32_t i = 0; i < ligmax; ++i) {
             Vector<float>& vert = raw.verts[ raw.ligaments[i] ];
@@ -305,7 +309,6 @@ void Skin::generate(SkinRaw& raw) {
         forces[1].x = -1 + 2 * (rand() * 1.f / RAND_MAX);
         forces[1].y = -1 + 2 * (rand() * 1.f / RAND_MAX);
         forces[1].z = -1 + 2 * (rand() * 1.f / RAND_MAX);
-        dots[i].gravity(&_gravity);
 
     }
 
@@ -319,9 +322,9 @@ void Skin::generate(SkinRaw& raw) {
         fibers[fibid].fiber(&dots[vs[0]], &dots[vs[1]]);
         if (vs[2] != 0) {
             fibers[fibid].musclise(
-                    fibers[fibid].init_rest_len() * tensor_mult_min,
-                    fibers[fibid].init_rest_len() * tensor_mult_max,
-                    tensor_frequency, 0
+                    fibers[fibid].init_rest_len() * _tensor_mult_min,
+                    fibers[fibid].init_rest_len() * _tensor_mult_max,
+                    _tensor_frequency, 0
                     );
         }
     }
@@ -337,24 +340,24 @@ void Skin::generate(SkinRaw& raw) {
                     );
             ligaments_heads[i] = &surfaces[surf_LIGAMENT].verticesw[ (i * 2) ];
             fibers[fibid].ligament(ligaments_heads[i], &dots[i]);
-            fibers[fibid].stiffness(ligament_strength);
+            fibers[fibid].stiffness(_ligament_strength);
         }
     }
     fibers_num = fibmax;
 
-//    std::cout << "Skin::generate report" << std::endl <<
-//            "\traw verts: " << raw.verts.size() << std::endl <<
-//            "\traw edges: " << raw.edges.size() << std::endl <<
-//            "\traw ligaments: " << raw.ligaments.size() << std::endl <<
-//            "\traw faces: " << raw.faces.size() << std::endl <<
-//            "\tsurfaces: " << surfaces.size() << std::endl;
-//    for (int i = 0; i < surfaces.size(); ++i) {
-//        std::cout << "\tsurfaces[" << i << "] vertices: " << surfaces[i].vertices.size() << std::endl;
-//        std::cout << "\tsurfaces[" << i << "] normals: " << surfaces[i].normals.size() << std::endl;
-//        std::cout << "\tsurfaces[" << i << "] indices: " << surfaces[i].indices.size() << std::endl;
-//        std::cout << "\tsurfaces[" << i << "] uvs: " << surfaces[i].uvs.size() << std::endl;
-//        std::cout << "\tsurfaces[" << i << "] type: " << surfaces[i].type << std::endl;
-//    }
+    //    std::cout << "Skin::generate report" << std::endl <<
+    //            "\traw verts: " << raw.verts.size() << std::endl <<
+    //            "\traw edges: " << raw.edges.size() << std::endl <<
+    //            "\traw ligaments: " << raw.ligaments.size() << std::endl <<
+    //            "\traw faces: " << raw.faces.size() << std::endl <<
+    //            "\tsurfaces: " << surfaces.size() << std::endl;
+    //    for (int i = 0; i < surfaces.size(); ++i) {
+    //        std::cout << "\tsurfaces[" << i << "] vertices: " << surfaces[i].vertices.size() << std::endl;
+    //        std::cout << "\tsurfaces[" << i << "] normals: " << surfaces[i].normals.size() << std::endl;
+    //        std::cout << "\tsurfaces[" << i << "] indices: " << surfaces[i].indices.size() << std::endl;
+    //        std::cout << "\tsurfaces[" << i << "] uvs: " << surfaces[i].uvs.size() << std::endl;
+    //        std::cout << "\tsurfaces[" << i << "] type: " << surfaces[i].type << std::endl;
+    //    }
 
     bind_root();
 
@@ -564,18 +567,6 @@ void Skin::parse(const String& path) {
 
 }
 
-AABB Skin::get_aabb() const {
-
-    return aabb;
-
-}
-
-PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
-
-    return PoolVector<Face3>();
-
-}
-
 void Skin::update(const float& delta) {
 
     if (!dots || !is_visible()) {
@@ -592,464 +583,25 @@ void Skin::update(const float& delta) {
     unbind_root();
 
     for (uint32_t i = 0; i < dots_num; ++i) {
-        if ( i == 0 ) {
+        if (i == 0) {
             aabb.position = dots[i].update(delta);
-            aabb.size = Vector3(0,0,0);
+            aabb.size = Vector3(0, 0, 0);
         } else {
-            aabb.expand_to( dots[i].update(delta) );
+            aabb.expand_to(dots[i].update(delta));
         }
     }
 
     for (uint32_t i = 0; i < fibers_num; ++i) {
-        fibers[i].update(delta);
+        _feedback_force += fibers[i].update(delta);
     }
-
+    
+    _feedback_force *= _feedback_softness;
+    _feedback_consumed = _feedback_force * _feedback_damping;
+    _feedback_force -= _feedback_consumed;
+    
     bind_root();
 
-}
-
-void Skin::set_ligament_strength(const float& s) {
-
-    ligament_strength = s;
-
-    if (dots && fibers) {
-        for (int i = 0; i < fibers_num; ++i) {
-            if (fibers[i].type() == sf_LIGAMENT) {
-                fibers[i].stiffness(ligament_strength);
-            }
-        }
-    }
-
-}
-
-void Skin::set_tensor_frequency(const float& s) {
-
-    tensor_frequency = s;
-
-    if (dots && fibers) {
-        for (int i = 0; i < fibers_num; ++i) {
-            if (fibers[i].type() == sf_TENSOR) {
-                fibers[i].muscle_frequency(tensor_frequency);
-            }
-        }
-    }
-
-}
-
-void Skin::set_tensor_mult_min(const float& s) {
-
-    tensor_mult_min = s;
-    apply_tensor_mults();
-
-}
-
-void Skin::set_tensor_mult_max(const float& s) {
-
-    tensor_mult_max = s;
-    apply_tensor_mults();
-
-}
-
-void Skin::apply_tensor_mults() {
-
-    if (dots && fibers) {
-        for (int i = 0; i < fibers_num; ++i) {
-            if (fibers[i].type() == sf_TENSOR) {
-                fibers[i].muscle_min_max(
-                        fibers[i].init_rest_len() * tensor_mult_min,
-                        fibers[i].init_rest_len() * tensor_mult_max
-                        );
-            }
-        }
-    }
-
-}
-
-float Skin::get_ligament_strength() const {
-
-    return ligament_strength;
-
-}
-
-float Skin::get_tensor_frequency() const {
-
-    return tensor_frequency;
-
-}
-
-float Skin::get_tensor_mult_min() const {
-
-    return tensor_mult_min;
-
-}
-
-float Skin::get_tensor_mult_max() const {
-
-    return tensor_mult_max;
-
-}
-
-void Skin::set_main_material(const Ref<Material> &material) {
-
-    main_material = material;
-    if (!surfaces.empty()) {
-        surfaces[surf_MAIN].material = main_material;
-    }
-
-}
-
-Ref<Material> Skin::get_main_material() const {
-
-    return main_material;
-
-}
-
-Ref<Material> Skin::get_fiber_material() const {
-
-    return fiber_material;
-
-}
-
-Ref<Material> Skin::get_tensor_material() const {
-
-    return tensor_material;
-
-}
-
-Ref<Material> Skin::get_ligament_material() const {
-
-    return ligament_material;
-
-}
-
-Ref<Material> Skin::get_muscle_material() const {
-
-    return muscle_material;
-
-}
-
-void Skin::set_fiber_material(const Ref<Material> &material) {
-
-    fiber_material = material;
-    if (!surfaces.empty()) {
-        surfaces[surf_FIBER].material = fiber_material;
-    }
-
-}
-
-void Skin::set_tensor_material(const Ref<Material> &material) {
-
-    tensor_material = material;
-    if (!surfaces.empty()) {
-        surfaces[surf_TENSOR].material = tensor_material;
-    }
-
-}
-
-void Skin::set_ligament_material(const Ref<Material> &material) {
-
-    ligament_material = material;
-    if (!surfaces.empty()) {
-        surfaces[surf_LIGAMENT].material = ligament_material;
-    }
-
-}
-
-void Skin::set_muscle_material(const Ref<Material> &material) {
-
-    muscle_material = material;
-    if (!surfaces.empty()) {
-        surfaces[surf_MUSCLE].material = muscle_material;
-        //        surfaces[surf_RAY].material = muscle_material;
-    }
-
-}
-
-void Skin::set_type(const int& type) {
-
-    purge();
-
-    if (type == 1) {
-        parse(soft_skin_path);
-    } else if (type == 2) {
-        grid(10, 10);
-    }
-
-}
-
-int Skin::get_type() const {
-
-    if (!dots && soft_skin_path == "") {
-
-        return 0;
-
-    } else if (soft_skin_path != "") {
-
-        return 1;
-
-    } else {
-
-        return 2;
-
-    }
-
-}
-
-void Skin::set_soft_skin_path(const String& path) {
-
-    soft_skin_path = path;
-    parse(path);
-
-}
-
-String Skin::get_soft_skin_path() const {
-
-    return soft_skin_path;
-
-}
-
-void Skin::set_main_display(const bool& display) {
-
-    main_display = display;
-    if (!surfaces.empty()) {
-        surfaces[surf_MAIN].enabled = main_display;
-    }
-
-}
-
-void Skin::set_fiber_display(const bool& display) {
-
-    fiber_display = display;
-    if (!surfaces.empty()) {
-        surfaces[surf_FIBER].enabled = fiber_display;
-    }
-
-}
-
-void Skin::set_tensor_display(const bool& display) {
-
-    tensor_display = display;
-    if (!surfaces.empty()) {
-        surfaces[surf_TENSOR].enabled = tensor_display;
-    }
-
-}
-
-void Skin::set_ligament_display(const bool& display) {
-
-    ligament_display = display;
-    if (!surfaces.empty()) {
-        surfaces[surf_LIGAMENT].enabled = ligament_display;
-    }
-
-}
-
-void Skin::set_muscle_display(const bool& display) {
-
-    muscle_display = display;
-    if (!surfaces.empty()) {
-        surfaces[surf_MUSCLE].enabled = ligament_display;
-    }
-
-}
-
-void Skin::set_local_gravity(const Vector3& g) {
-
-    _local_gravity = g;
-
-    if (_local_gravity.length() != 0) {
-        _update_gravity = true;
-    } else {
-        _update_gravity = false;
-        _gravity.x = 0;
-        _gravity.y = 0;
-        _gravity.z = 0;
-    }
-
-}
-
-bool Skin::get_main_display() const {
-    return main_display;
-}
-
-bool Skin::get_fiber_display() const {
-    return fiber_display;
-}
-
-bool Skin::get_tensor_display() const {
-    return tensor_display;
-}
-
-bool Skin::get_ligament_display() const {
-    return ligament_display;
-}
-
-bool Skin::get_muscle_display() const {
-    return muscle_display;
-}
-
-Vector3 Skin::get_local_gravity() const {
-    return _local_gravity;
-}
-
-void Skin::_bind_methods() {
-
-    ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
-    ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
-    ClassDB::bind_method(D_METHOD("grid", "divx", "divy"), &Skin::grid);
-
-    ClassDB::bind_method(D_METHOD("set_type", "type"), &Skin::set_type);
-    ClassDB::bind_method(D_METHOD("get_type"), &Skin::get_type);
-
-    ClassDB::bind_method(D_METHOD("set_soft_skin_path", "path"), &Skin::set_soft_skin_path);
-    ClassDB::bind_method(D_METHOD("get_soft_skin_path"), &Skin::get_soft_skin_path);
-
-    ClassDB::bind_method(D_METHOD("set_ligament_strength", "s"), &Skin::set_ligament_strength);
-    ClassDB::bind_method(D_METHOD("get_ligament_strength"), &Skin::get_ligament_strength);
-
-    ClassDB::bind_method(D_METHOD("set_tensor_frequency", "s"), &Skin::set_tensor_frequency);
-    ClassDB::bind_method(D_METHOD("get_tensor_frequency"), &Skin::get_tensor_frequency);
-    ClassDB::bind_method(D_METHOD("set_tensor_mult_min", "s"), &Skin::set_tensor_mult_min);
-    ClassDB::bind_method(D_METHOD("get_tensor_mult_min"), &Skin::get_tensor_mult_min);
-    ClassDB::bind_method(D_METHOD("set_tensor_mult_max", "s"), &Skin::set_tensor_mult_max);
-    ClassDB::bind_method(D_METHOD("get_tensor_mult_max"), &Skin::get_tensor_mult_max);
-
-    ClassDB::bind_method(D_METHOD("set_main_material", "material"), &Skin::set_main_material);
-    ClassDB::bind_method(D_METHOD("get_main_material"), &Skin::get_main_material);
-    ClassDB::bind_method(D_METHOD("set_fiber_material", "material"), &Skin::set_fiber_material);
-    ClassDB::bind_method(D_METHOD("get_fiber_material"), &Skin::get_fiber_material);
-    ClassDB::bind_method(D_METHOD("set_tensor_material", "material"), &Skin::set_tensor_material);
-    ClassDB::bind_method(D_METHOD("get_tensor_material"), &Skin::get_tensor_material);
-    ClassDB::bind_method(D_METHOD("set_ligament_material", "material"), &Skin::set_ligament_material);
-    ClassDB::bind_method(D_METHOD("get_ligament_material"), &Skin::get_ligament_material);
-    ClassDB::bind_method(D_METHOD("set_muscle_material", "material"), &Skin::set_muscle_material);
-    ClassDB::bind_method(D_METHOD("get_muscle_material"), &Skin::get_muscle_material);
-
-    ClassDB::bind_method(D_METHOD("set_main_display", "display"), &Skin::set_main_display);
-    ClassDB::bind_method(D_METHOD("get_main_display"), &Skin::get_main_display);
-    ClassDB::bind_method(D_METHOD("set_fiber_display", "display"), &Skin::set_fiber_display);
-    ClassDB::bind_method(D_METHOD("get_fiber_display"), &Skin::get_fiber_display);
-    ClassDB::bind_method(D_METHOD("set_tensor_display", "display"), &Skin::set_tensor_display);
-    ClassDB::bind_method(D_METHOD("get_tensor_display"), &Skin::get_tensor_display);
-    ClassDB::bind_method(D_METHOD("set_ligament_display", "display"), &Skin::set_ligament_display);
-    ClassDB::bind_method(D_METHOD("get_ligament_display"), &Skin::get_ligament_display);
-    ClassDB::bind_method(D_METHOD("set_muscle_display", "display"), &Skin::set_muscle_display);
-    ClassDB::bind_method(D_METHOD("get_muscle_display"), &Skin::get_muscle_display);
-
-
-    ClassDB::bind_method(D_METHOD("set_local_gravity", "g"), &Skin::set_local_gravity);
-    ClassDB::bind_method(D_METHOD("get_local_gravity"), &Skin::get_local_gravity);
-
-    ADD_GROUP("Configuration", "conf_");
-
-    ADD_PROPERTY(PropertyInfo(Variant::INT,
-            "conf_type", PROPERTY_HINT_ENUM,
-            "undefined,custom,grid"),
-            "set_type",
-            "get_type");
-
-    ADD_PROPERTY(PropertyInfo(Variant::STRING,
-            "conf_softskin file", PROPERTY_HINT_NONE),
-            "set_soft_skin_path",
-            "get_soft_skin_path");
-
-    ADD_PROPERTY(PropertyInfo(Variant::VECTOR3,
-            "conf_gravity", PROPERTY_HINT_NONE),
-            "set_local_gravity",
-            "get_local_gravity");
-
-    ADD_PROPERTY(PropertyInfo(Variant::REAL,
-            "conf_ligament_strength", PROPERTY_HINT_RANGE,
-            "0.0,2.0,0.00001"),
-            "set_ligament_strength", "get_ligament_strength");
-
-    ADD_PROPERTY(PropertyInfo(Variant::REAL,
-            "conf_tensor_frequency", PROPERTY_HINT_RANGE,
-            "-10.0,10.0,0.00001"),
-            "set_tensor_frequency", "get_tensor_frequency");
-
-    ADD_PROPERTY(PropertyInfo(Variant::REAL,
-            "conf_tensor_mult_min", PROPERTY_HINT_RANGE,
-            "0.0,2.0,0.00001"),
-            "set_tensor_mult_min", "get_tensor_mult_min");
-
-    ADD_PROPERTY(PropertyInfo(Variant::REAL,
-            "conf_tensor_mult_max", PROPERTY_HINT_RANGE,
-            "0.0,4.0,0.00001"),
-            "set_tensor_mult_max", "get_tensor_mult_max");
-
-    ADD_GROUP("Display", "display_");
-
-
-    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
-            "display_main", PROPERTY_HINT_NONE),
-            "set_main_display",
-            "get_main_display");
-
-    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
-            "display_fiber", PROPERTY_HINT_NONE),
-            "set_fiber_display",
-            "get_fiber_display");
-
-    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
-            "display_tensor", PROPERTY_HINT_NONE),
-            "set_tensor_display",
-            "get_tensor_display");
-
-    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
-            "display_ligament", PROPERTY_HINT_NONE),
-            "set_ligament_display",
-            "get_ligament_display");
-
-    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
-            "display_muscle", PROPERTY_HINT_NONE),
-            "set_muscle_display",
-            "get_muscle_display");
-
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
-            "display_main_material", PROPERTY_HINT_RESOURCE_TYPE,
-            "SpatialMaterial,ShaderMaterial"),
-            "set_main_material", "get_main_material");
-
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
-            "display_fiber_material", PROPERTY_HINT_RESOURCE_TYPE,
-            "SpatialMaterial,ShaderMaterial"),
-            "set_fiber_material", "get_fiber_material");
-
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
-            "display_tensor material", PROPERTY_HINT_RESOURCE_TYPE,
-            "SpatialMaterial,ShaderMaterial"),
-            "set_tensor_material", "get_tensor_material");
-
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
-            "display_ligament_material", PROPERTY_HINT_RESOURCE_TYPE,
-            "SpatialMaterial,ShaderMaterial"),
-            "set_ligament_material", "get_ligament_material");
-
-    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
-            "display_muscle material", PROPERTY_HINT_RESOURCE_TYPE,
-            "SpatialMaterial,ShaderMaterial"),
-            "set_muscle_material", "get_muscle_material");
-
-}
-
-void Skin::_notification(int p_what) {
-
-    switch (p_what) {
-        case NOTIFICATION_ENTER_TREE:
-            SkinNotifier::notify(sno_SKIN_CREATED);
-            break;
-        case NOTIFICATION_PARENTED:
-        case NOTIFICATION_PATH_CHANGED:
-        case NOTIFICATION_MOVED_IN_PARENT:
-        case NOTIFICATION_UNPARENTED:
-            SkinNotifier::notify(sno_SKIN_MOVED);
-            break;
-        default:
-            break;
-
-    }
-    //std::cout << p_what << std::endl;
+    translate(_feedback_consumed);
 
 }
 
@@ -1083,15 +635,15 @@ void Skin::hit(
                 srr.dot_to_ray >= 0 &&
                 srr.distance_to_ray <= radius
                 ) {
-            
+
             srr.skin_ptr = this;
             srr.dot_index = i;
             ray.results[this].push_back(srr);
-            
+
         } else {
-            
+
             continue;
-            
+
         }
 
         if (
@@ -1100,7 +652,7 @@ void Skin::hit(
                 srr.distance_to_origin
                 ) {
 
-            if ( !ray.closest_result ) {
+            if (!ray.closest_result) {
                 ray.closest_result = new SkinRayResult();
             }
 
@@ -1109,6 +661,7 @@ void Skin::hit(
                     local_from +
                     ray_dir * ray.closest_result->distance_to_origin
                     );
+            ray.world_distance = ray.world_position.distance_to( from );
             ray.success = true;
 
         }
@@ -1162,5 +715,506 @@ void Skin::ray_world_position(
                 );
 
     }
+
+}
+
+void Skin::_notification(int p_what) {
+
+    switch (p_what) {
+        case NOTIFICATION_ENTER_TREE:
+            SkinNotifier::notify(sno_SKIN_CREATED);
+            break;
+        case NOTIFICATION_PARENTED:
+        case NOTIFICATION_PATH_CHANGED:
+        case NOTIFICATION_MOVED_IN_PARENT:
+        case NOTIFICATION_UNPARENTED:
+            SkinNotifier::notify(sno_SKIN_MOVED);
+            break;
+        default:
+            break;
+
+    }
+    //std::cout << p_what << std::endl;
+
+}
+
+//******************** SETTERS ********************//
+
+void Skin::set_ligament_strength(const float& s) {
+
+    _ligament_strength = s;
+
+    if (dots && fibers) {
+        for (int i = 0; i < fibers_num; ++i) {
+            if (fibers[i].type() == sf_LIGAMENT) {
+                fibers[i].stiffness(_ligament_strength);
+            }
+        }
+    }
+
+}
+
+void Skin::set_tensor_frequency(const float& s) {
+
+    _tensor_frequency = s;
+
+    if (dots && fibers) {
+        for (int i = 0; i < fibers_num; ++i) {
+            if (fibers[i].type() == sf_TENSOR) {
+                fibers[i].muscle_frequency(_tensor_frequency);
+            }
+        }
+    }
+
+}
+
+void Skin::set_tensor_mult_min(const float& s) {
+
+    _tensor_mult_min = s;
+    apply_tensor_mults();
+
+}
+
+void Skin::set_tensor_mult_max(const float& s) {
+
+    _tensor_mult_max = s;
+    apply_tensor_mults();
+
+}
+
+void Skin::apply_tensor_mults() {
+
+    if (dots && fibers) {
+        for (int i = 0; i < fibers_num; ++i) {
+            if (fibers[i].type() == sf_TENSOR) {
+                fibers[i].muscle_min_max(
+                        fibers[i].init_rest_len() * _tensor_mult_min,
+                        fibers[i].init_rest_len() * _tensor_mult_max
+                        );
+            }
+        }
+    }
+
+}
+
+void Skin::set_main_material(const Ref<Material> &material) {
+
+    _main_material = material;
+    if (!surfaces.empty()) {
+        surfaces[surf_MAIN].material = _main_material;
+    }
+
+}
+
+void Skin::set_fiber_material(const Ref<Material> &material) {
+
+    _fiber_material = material;
+    if (!surfaces.empty()) {
+        surfaces[surf_FIBER].material = _fiber_material;
+    }
+
+}
+
+void Skin::set_tensor_material(const Ref<Material> &material) {
+
+    _tensor_material = material;
+    if (!surfaces.empty()) {
+        surfaces[surf_TENSOR].material = _tensor_material;
+    }
+
+}
+
+void Skin::set_ligament_material(const Ref<Material> &material) {
+
+    _ligament_material = material;
+    if (!surfaces.empty()) {
+        surfaces[surf_LIGAMENT].material = _ligament_material;
+    }
+
+}
+
+void Skin::set_muscle_material(const Ref<Material> &material) {
+
+    _muscle_material = material;
+    if (!surfaces.empty()) {
+        surfaces[surf_MUSCLE].material = _muscle_material;
+        //        surfaces[surf_RAY].material = muscle_material;
+    }
+
+}
+
+void Skin::set_type(const int& type) {
+
+    purge();
+
+    if (type == 1) {
+        parse(_soft_skin_path);
+    } else if (type == 2) {
+        grid(10, 10);
+    }
+
+}
+
+void Skin::set_soft_skin_path(const String& path) {
+
+    _soft_skin_path = path;
+    parse(path);
+
+}
+
+void Skin::set_main_display(const bool& display) {
+
+    _main_display = display;
+    if (!surfaces.empty()) {
+        surfaces[surf_MAIN].enabled = _main_display;
+    }
+
+}
+
+void Skin::set_fiber_display(const bool& display) {
+
+    _fiber_display = display;
+    if (!surfaces.empty()) {
+        surfaces[surf_FIBER].enabled = _fiber_display;
+    }
+
+}
+
+void Skin::set_tensor_display(const bool& display) {
+
+    _tensor_display = display;
+    if (!surfaces.empty()) {
+        surfaces[surf_TENSOR].enabled = _tensor_display;
+    }
+
+}
+
+void Skin::set_ligament_display(const bool& display) {
+
+    _ligament_display = display;
+    if (!surfaces.empty()) {
+        surfaces[surf_LIGAMENT].enabled = _ligament_display;
+    }
+
+}
+
+void Skin::set_muscle_display(const bool& display) {
+
+    _muscle_display = display;
+    if (!surfaces.empty()) {
+        surfaces[surf_MUSCLE].enabled = _ligament_display;
+    }
+
+}
+
+void Skin::set_local_gravity(const Vector3& g) {
+
+    _local_gravity = g;
+
+    if (_local_gravity.length() != 0) {
+        _update_gravity = true;
+    } else {
+        _update_gravity = false;
+        _gravity.x = 0;
+        _gravity.y = 0;
+        _gravity.z = 0;
+    }
+
+}
+
+void Skin::set_feedback_damping(const float& s) {
+    
+    _feedback_damping = s;
+    
+}
+    
+void Skin::set_feedback_softness(const float& s) {
+
+    _feedback_softness = s;
+    
+}
+
+//******************** GETTERS ********************//
+
+AABB Skin::get_aabb() const {
+
+    return aabb;
+
+}
+
+PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
+
+    return PoolVector<Face3>();
+
+}
+
+float Skin::ligament_strength() const {
+
+    return _ligament_strength;
+
+}
+
+float Skin::tensor_frequency() const {
+
+    return _tensor_frequency;
+
+}
+
+float Skin::tensor_mult_min() const {
+
+    return _tensor_mult_min;
+
+}
+
+float Skin::tensor_mult_max() const {
+
+    return _tensor_mult_max;
+
+}
+
+Ref<Material> Skin::main_material() const {
+
+    return _main_material;
+
+}
+
+Ref<Material> Skin::fiber_material() const {
+
+    return _fiber_material;
+
+}
+
+Ref<Material> Skin::tensor_material() const {
+
+    return _tensor_material;
+
+}
+
+Ref<Material> Skin::ligament_material() const {
+
+    return _ligament_material;
+
+}
+
+Ref<Material> Skin::muscle_material() const {
+
+    return _muscle_material;
+
+}
+
+int Skin::type() const {
+
+    if (!dots && _soft_skin_path == "") {
+
+        return 0;
+
+    } else if (_soft_skin_path != "") {
+
+        return 1;
+
+    } else {
+
+        return 2;
+
+    }
+
+}
+
+String Skin::soft_skin_path() const {
+
+    return _soft_skin_path;
+
+}
+
+bool Skin::main_display() const {
+    return _main_display;
+}
+
+bool Skin::fiber_display() const {
+    return _fiber_display;
+}
+
+bool Skin::tensor_display() const {
+    return _tensor_display;
+}
+
+bool Skin::ligament_display() const {
+    return _ligament_display;
+}
+
+bool Skin::muscle_display() const {
+    return _muscle_display;
+}
+
+float Skin::feedback_damping() const {
+
+    return _feedback_damping;
+    
+}
+
+float  Skin::feedback_softness() const {
+
+    return _feedback_softness;
+    
+}
+
+Vector3 Skin::local_gravity() const {
+    return _local_gravity;
+}
+
+void Skin::_bind_methods() {
+
+    ClassDB::bind_method(D_METHOD("render_skin", "delta"), &Skin::update);
+    ClassDB::bind_method(D_METHOD("parse", "path"), &Skin::parse);
+    ClassDB::bind_method(D_METHOD("grid", "divx", "divy"), &Skin::grid);
+
+    ClassDB::bind_method(D_METHOD("set_type", "type"), &Skin::set_type);
+    ClassDB::bind_method(D_METHOD("type"), &Skin::type);
+
+    ClassDB::bind_method(D_METHOD("set_soft_skin_path", "path"), &Skin::set_soft_skin_path);
+    ClassDB::bind_method(D_METHOD("soft_skin_path"), &Skin::soft_skin_path);
+
+    ClassDB::bind_method(D_METHOD("set_ligament_strength", "s"), &Skin::set_ligament_strength);
+    ClassDB::bind_method(D_METHOD("ligament_strength"), &Skin::ligament_strength);
+
+    ClassDB::bind_method(D_METHOD("set_tensor_frequency", "s"), &Skin::set_tensor_frequency);
+    ClassDB::bind_method(D_METHOD("tensor_frequency"), &Skin::tensor_frequency);
+    ClassDB::bind_method(D_METHOD("set_tensor_mult_min", "s"), &Skin::set_tensor_mult_min);
+    ClassDB::bind_method(D_METHOD("tensor_mult_min"), &Skin::tensor_mult_min);
+    ClassDB::bind_method(D_METHOD("set_tensor_mult_max", "s"), &Skin::set_tensor_mult_max);
+    ClassDB::bind_method(D_METHOD("tensor_mult_max"), &Skin::tensor_mult_max);
+
+    ClassDB::bind_method(D_METHOD("set_main_material", "material"), &Skin::set_main_material);
+    ClassDB::bind_method(D_METHOD("main_material"), &Skin::main_material);
+    ClassDB::bind_method(D_METHOD("set_fiber_material", "material"), &Skin::set_fiber_material);
+    ClassDB::bind_method(D_METHOD("fiber_material"), &Skin::fiber_material);
+    ClassDB::bind_method(D_METHOD("set_tensor_material", "material"), &Skin::set_tensor_material);
+    ClassDB::bind_method(D_METHOD("tensor_material"), &Skin::tensor_material);
+    ClassDB::bind_method(D_METHOD("set_ligament_material", "material"), &Skin::set_ligament_material);
+    ClassDB::bind_method(D_METHOD("ligament_material"), &Skin::ligament_material);
+    ClassDB::bind_method(D_METHOD("set_muscle_material", "material"), &Skin::set_muscle_material);
+    ClassDB::bind_method(D_METHOD("muscle_material"), &Skin::muscle_material);
+
+    ClassDB::bind_method(D_METHOD("set_main_display", "display"), &Skin::set_main_display);
+    ClassDB::bind_method(D_METHOD("main_display"), &Skin::main_display);
+    ClassDB::bind_method(D_METHOD("set_fiber_display", "display"), &Skin::set_fiber_display);
+    ClassDB::bind_method(D_METHOD("fiber_display"), &Skin::fiber_display);
+    ClassDB::bind_method(D_METHOD("set_tensor_display", "display"), &Skin::set_tensor_display);
+    ClassDB::bind_method(D_METHOD("tensor_display"), &Skin::tensor_display);
+    ClassDB::bind_method(D_METHOD("set_ligament_display", "display"), &Skin::set_ligament_display);
+    ClassDB::bind_method(D_METHOD("ligament_display"), &Skin::ligament_display);
+    ClassDB::bind_method(D_METHOD("set_muscle_display", "display"), &Skin::set_muscle_display);
+    ClassDB::bind_method(D_METHOD("muscle_display"), &Skin::muscle_display);
+
+    ClassDB::bind_method(D_METHOD("set_local_gravity", "g"), &Skin::set_local_gravity);
+    ClassDB::bind_method(D_METHOD("local_gravity"), &Skin::local_gravity);
+    
+    ClassDB::bind_method(D_METHOD("set_feedback_damping", "s"), &Skin::set_feedback_damping);
+    ClassDB::bind_method(D_METHOD("feedback_damping"), &Skin::feedback_damping);
+    ClassDB::bind_method(D_METHOD("set_feedback_softness", "s"), &Skin::set_feedback_softness);
+    ClassDB::bind_method(D_METHOD("feedback_softness"), &Skin::feedback_softness);
+
+    ADD_GROUP("Configuration", "conf_");
+
+    ADD_PROPERTY(PropertyInfo(Variant::INT,
+            "conf_type", PROPERTY_HINT_ENUM,
+            "undefined,custom,grid"),
+            "set_type",
+            "type");
+
+    ADD_PROPERTY(PropertyInfo(Variant::STRING,
+            "conf_softskin file", PROPERTY_HINT_NONE),
+            "set_soft_skin_path",
+            "soft_skin_path");
+
+//    ADD_PROPERTY(PropertyInfo(Variant::VECTOR3,
+//            "conf_gravity", PROPERTY_HINT_NONE),
+//            "set_local_gravity",
+//            "local_gravity");
+    
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_damping", PROPERTY_HINT_RANGE,
+            "0.0,1.0,0.00001"),
+            "set_feedback_damping",
+            "feedback_damping");
+    
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_softness", PROPERTY_HINT_RANGE,
+            "0.0,1.0,0.00001"),
+            "set_feedback_softness",
+            "feedback_softness");
+
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_ligament_strength", PROPERTY_HINT_RANGE,
+            "0.0,2.0,0.00001"),
+            "set_ligament_strength", "ligament_strength");
+
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_tensor_frequency", PROPERTY_HINT_RANGE,
+            "-10.0,10.0,0.00001"),
+            "set_tensor_frequency", "tensor_frequency");
+
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_tensor_mult_min", PROPERTY_HINT_RANGE,
+            "0.0,2.0,0.00001"),
+            "set_tensor_mult_min", "tensor_mult_min");
+
+    ADD_PROPERTY(PropertyInfo(Variant::REAL,
+            "conf_tensor_mult_max", PROPERTY_HINT_RANGE,
+            "0.0,4.0,0.00001"),
+            "set_tensor_mult_max", "tensor_mult_max");
+
+    ADD_GROUP("Display", "display_");
+
+
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
+            "display_main", PROPERTY_HINT_NONE),
+            "set_main_display",
+            "main_display");
+
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
+            "display_fiber", PROPERTY_HINT_NONE),
+            "set_fiber_display",
+            "fiber_display");
+
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
+            "display_tensor", PROPERTY_HINT_NONE),
+            "set_tensor_display",
+            "tensor_display");
+
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
+            "display_ligament", PROPERTY_HINT_NONE),
+            "set_ligament_display",
+            "ligament_display");
+
+    ADD_PROPERTY(PropertyInfo(Variant::BOOL,
+            "display_muscle", PROPERTY_HINT_NONE),
+            "set_muscle_display",
+            "muscle_display");
+
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
+            "display_main_material", PROPERTY_HINT_RESOURCE_TYPE,
+            "SpatialMaterial,ShaderMaterial"),
+            "set_main_material", "main_material");
+
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
+            "display_fiber_material", PROPERTY_HINT_RESOURCE_TYPE,
+            "SpatialMaterial,ShaderMaterial"),
+            "set_fiber_material", "fiber_material");
+
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
+            "display_tensor material", PROPERTY_HINT_RESOURCE_TYPE,
+            "SpatialMaterial,ShaderMaterial"),
+            "set_tensor_material", "tensor_material");
+
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
+            "display_ligament_material", PROPERTY_HINT_RESOURCE_TYPE,
+            "SpatialMaterial,ShaderMaterial"),
+            "set_ligament_material", "ligament_material");
+
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT,
+            "display_muscle material", PROPERTY_HINT_RESOURCE_TYPE,
+            "SpatialMaterial,ShaderMaterial"),
+            "set_muscle_material", "muscle_material");
 
 }

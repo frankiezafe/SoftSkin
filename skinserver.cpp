@@ -208,12 +208,12 @@ const Vector3& SkinServer::hit_point() const {
 const Vector3& SkinServer::drag_point(const Vector3& from, const Vector3& to) {
 
     if (_hit_point.closest_result) {
-
-        std::cout << "SkinServer::drag_point: " <<
-                _hit_point.closest_result->skin_ptr << std::endl;
         
-        ((Skin*) _hit_point.closest_result->skin_ptr)->ray_world_position(
-                from, to, _hit_point);
+        // rendering world position based on world_distance
+        Vector3 dir = to - from;        
+        _hit_point.world_position = 
+                from + 
+                dir.normalized() * _hit_point.world_distance;
 
         skinray_map_iterator itr = _hit_point.results.begin();
         skinray_map_iterator itre = _hit_point.results.end();

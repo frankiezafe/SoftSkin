@@ -45,130 +45,129 @@
 
 #include "vector3ptr.h"
 
-Vector3ptr::Vector3ptr() : 
-	_v3( 0 ), 
-	_local(false),
-	_inititalised(false)
-{}
+Vector3ptr::Vector3ptr() :
+_v3(0),
+_local(false),
+_inititalised(false) {
+}
 
-Vector3ptr::Vector3ptr( Vector3* v3 ) : 
-	_v3( v3 ), 
-	_local(false),
-	_inititalised(false)
-{}
+Vector3ptr::Vector3ptr(Vector3* v3) :
+_v3(v3),
+_local(false),
+_inititalised(false) {
+}
 
-Vector3ptr::Vector3ptr( const float& x, const float& y, const float& z ): 
-	_local(true) ,
-	_inititalised(false)
-{
-	
-	_v3 = new Vector3( x,y,z );
-	
+Vector3ptr::Vector3ptr(const float& x, const float& y, const float& z) :
+_local(true),
+_inititalised(false) {
+
+    _v3 = new Vector3(x, y, z);
+
 }
 
 Vector3ptr::~Vector3ptr() {
-	
-	purge();
-	
+
+    purge();
+
 }
 
 void Vector3ptr::purge() {
-	
-	if ( _local ) {
-		delete _v3;
-	}
-	_v3 = 0;
-	_local = false;
-	_inititalised = false;
-	
+
+    if (_local) {
+        delete _v3;
+    }
+    _v3 = 0;
+    _local = false;
+    _inititalised = false;
+
 }
 
-void Vector3ptr::init( Vector3* v3 ) {
-	
-	purge();
-	
-	if ( v3 ) {
-		_local = false;
-		_v3 = v3;
-		_inititalised = true;
-	}
-	
+void Vector3ptr::init(Vector3* v3) {
+
+    purge();
+
+    if (v3) {
+        _local = false;
+        _v3 = v3;
+        _inititalised = true;
+    }
+
 }
 
-void Vector3ptr::init( const float& x, const float& y, const float& z ) {
-	
-	purge();
-	_local = true;
-	_v3 = new Vector3( x,y,z );
-	_inititalised = true;
-	
+void Vector3ptr::init(const float& x, const float& y, const float& z) {
+
+    purge();
+    _local = true;
+    _v3 = new Vector3(x, y, z);
+    _inititalised = true;
+
 }
 
-void Vector3ptr::set( const float& x, const float& y, const float& z ) {
-	
-	assert( _inititalised );
-	
-	_v3->x = x;
-	_v3->y = y;
-	_v3->z = z;
-	
+void Vector3ptr::set(const float& x, const float& y, const float& z) {
+
+    assert(_inititalised);
+
+    _v3->x = x;
+    _v3->y = y;
+    _v3->z = z;
+
 }
 
-void Vector3ptr::operator = ( const Vector3& v3 ) {
-	
-	assert( _inititalised );
-	
-	_v3->x = v3.x;
-	_v3->y = v3.y;
-	_v3->z = v3.z;
-	
+void Vector3ptr::operator=(const Vector3& v3) {
+
+    assert(_inititalised);
+
+    _v3->x = v3.x;
+    _v3->y = v3.y;
+    _v3->z = v3.z;
+
 }
 
-void Vector3ptr::operator = ( const Vector3ptr& v3ptr ) {
-	
-	assert( _inititalised );
-	
-	_v3->x = v3ptr.ptr()->x;
-	_v3->y = v3ptr.ptr()->y;
-	_v3->z = v3ptr.ptr()->z;
-	
+void Vector3ptr::operator=(const Vector3ptr& v3ptr) {
+
+    assert(_inititalised);
+
+    _v3->x = v3ptr.ptr()->x;
+    _v3->y = v3ptr.ptr()->y;
+    _v3->z = v3ptr.ptr()->z;
+
 }
 
-void Vector3ptr::operator += (const Vector3& v3 ) {
-	
-	assert( _inititalised );
-	
-	_v3->x += v3.x;
-	_v3->y += v3.y;
-	_v3->z += v3.z;
-	
+void Vector3ptr::operator+=(const Vector3& v3) {
+
+    assert(_inititalised);
+
+    _v3->x += v3.x;
+    _v3->y += v3.y;
+    _v3->z += v3.z;
+
 }
 
-void Vector3ptr::operator -= (const Vector3& v3 ) {
-	
-	assert( _inititalised );
-	
-	_v3->x -= v3.x;
-	_v3->y -= v3.y;
-	_v3->z -= v3.z;
-	
+void Vector3ptr::operator-=(const Vector3& v3) {
+
+    assert(_inititalised);
+
+    _v3->x -= v3.x;
+    _v3->y -= v3.y;
+    _v3->z -= v3.z;
+
 }
 
-const float& Vector3ptr::operator [] ( const uint8_t& i ) const {
-	
-	assert( _inititalised );
-	assert(i>2);
-	
-	return (*_v3)[i];
-	
+const float& Vector3ptr::operator[](const uint8_t& i) const {
+
+    assert(_inititalised);
+    assert(i > 2);
+
+    return (*_v3)[i];
+
 }
 
-void Vector3ptr::operator >> ( Vector3* v3 ) const {
-	
-	assert( _inititalised );
-	
-	v3->x = _v3->x;
-	v3->y = _v3->y;
-	v3->z = _v3->z;
-	
+void Vector3ptr::operator>>(Vector3* v3) const {
+
+    assert(_inititalised);
+
+    v3->x = _v3->x;
+    v3->y = _v3->y;
+    v3->z = _v3->z;
+
 }

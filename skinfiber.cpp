@@ -53,6 +53,7 @@ _rest_len(0),
 _rest_len_multiplier(1),
 _init_rest_len(0),
 _stiffness(1),
+_force_feedback(0, 0, 0),
 _muscled(false),
 _muscle_min_len(0),
 _muscle_max_len(0),
@@ -172,32 +173,34 @@ bool SkinFiber::musclise(float min, float max, float freq, float shift) {
 
 }
 
-void SkinFiber::update(const float& delta_time) {
+const Vector3& SkinFiber::update(const float& delta_time) {
 
-    if (_type == sf_UNDEFINED) {
-        return;
+    if (_type != sf_UNDEFINED) {
+
+        if (_muscled) {
+            update_muscle(delta_time);
+        }
+
+        switch (_type) {
+
+            case sf_FIBER:
+            case sf_TENSOR:
+                update_fiber();
+                break;
+
+            case sf_LIGAMENT:
+            case sf_MUSCLE:
+                update_ligament();
+                break;
+
+            default:
+                break;
+
+        }
+        
     }
-
-    if (_muscled) {
-        update_muscle(delta_time);
-    }
-
-    switch (_type) {
-
-        case sf_FIBER:
-        case sf_TENSOR:
-            update_fiber();
-            break;
-
-        case sf_LIGAMENT:
-        case sf_MUSCLE:
-            update_ligament();
-            break;
-
-        default:
-            break;
-
-    }
+    
+    return _force_feedback;
 
 }
 
@@ -232,14 +235,17 @@ void SkinFiber::update_fiber() {
 }
 
 void SkinFiber::update_ligament() {
-    
+
     const Vector3& av = (*_head_vec3);
 
     _dir = _tail->vert().ref() - av;
     _current_len = _dir.length();
     _dir.normalize();
+    _dir *= _stiffness * _current_len;
 
-    _tail->push(-_dir * _stiffness * _current_len);
+    _tail->push(-_dir);
+    
+    _force_feedback = _dir;
 
     _middle = av + _dir * _current_len * 0.5;
 

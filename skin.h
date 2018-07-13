@@ -92,6 +92,8 @@ public:
     void parse(const String& path);
 
     void update(const float& delta_time);
+    
+    // setters
 
     void set_type(const int& type);
 
@@ -126,40 +128,50 @@ public:
     void set_ligament_material(const Ref<Material> &material);
 
     void set_muscle_material(const Ref<Material> &material);
+    
+    void set_feedback_damping(const float& s);
+    
+    void set_feedback_softness(const float& s);
+    
+    // getters
 
-    float get_ligament_strength() const;
+    float ligament_strength() const;
 
-    float get_tensor_frequency() const;
+    float tensor_frequency() const;
 
-    float get_tensor_mult_min() const;
+    float tensor_mult_min() const;
 
-    float get_tensor_mult_max() const;
+    float tensor_mult_max() const;
 
-    int get_type() const;
+    int type() const;
 
-    String get_soft_skin_path() const;
+    String soft_skin_path() const;
 
-    bool get_main_display() const;
+    bool main_display() const;
 
-    bool get_fiber_display() const;
+    bool fiber_display() const;
 
-    bool get_tensor_display() const;
+    bool tensor_display() const;
 
-    bool get_ligament_display() const;
+    bool ligament_display() const;
 
-    bool get_muscle_display() const;
+    bool muscle_display() const;
 
-    Vector3 get_local_gravity() const;
+    Vector3 local_gravity() const;
 
-    Ref<Material> get_main_material() const;
+    Ref<Material> main_material() const;
 
-    Ref<Material> get_fiber_material() const;
+    Ref<Material> fiber_material() const;
 
-    Ref<Material> get_tensor_material() const;
+    Ref<Material> tensor_material() const;
 
-    Ref<Material> get_ligament_material() const;
+    Ref<Material> ligament_material() const;
 
-    Ref<Material> get_muscle_material() const;
+    Ref<Material> muscle_material() const;
+    
+    float feedback_damping() const;
+    
+    float feedback_softness() const;
 
     // mandatory methods for VisualInstance
     virtual AABB get_aabb() const;
@@ -187,27 +199,32 @@ private:
     Vector3 _local_gravity;
     Vector3 _gravity;
     bool _update_gravity;
-    float ligament_strength;
-    float tensor_frequency; // 0.5 by default
-    float tensor_mult_min; // 0.2 by default
-    float tensor_mult_max; // 1.4 by default
+    float _ligament_strength;
+    float _tensor_frequency; // 0.5 by default
+    float _tensor_mult_min; // 0.2 by default
+    float _tensor_mult_max; // 1.4 by default
+    
+    Vector3 _feedback_force;
+    Vector3 _feedback_consumed;
+    float _feedback_damping;
+    float _feedback_softness;
 
     Ref<ArrayMesh> root_mesh;
     Vector<ShapeUpdateSurface> surfaces;
 
-    String soft_skin_path;
+    String _soft_skin_path;
 
-    bool main_display;
-    bool fiber_display;
-    bool tensor_display;
-    bool ligament_display;
-    bool muscle_display;
+    bool _main_display;
+    bool _fiber_display;
+    bool _tensor_display;
+    bool _ligament_display;
+    bool _muscle_display;
 
-    Ref<Material> main_material;
-    Ref<Material> fiber_material;
-    Ref<Material> tensor_material;
-    Ref<Material> ligament_material;
-    Ref<Material> muscle_material;
+    Ref<Material> _main_material;
+    Ref<Material> _fiber_material;
+    Ref<Material> _tensor_material;
+    Ref<Material> _ligament_material;
+    Ref<Material> _muscle_material;
 
     void purge();
 

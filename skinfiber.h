@@ -98,7 +98,7 @@ public:
 
     bool musclise(float min, float max, float freq = 1, float shift = 0);
 
-    void update(const float& delta_time);
+    const Vector3& update(const float& delta_time);
 
     // getters
 
@@ -158,6 +158,7 @@ private:
     float _init_rest_len;
 
     float _stiffness;
+    Vector3 _force_feedback;
 
     bool _muscled;
     float _muscle_min_len;

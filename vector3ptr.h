@@ -49,63 +49,61 @@
 #include "vector3.h"
 #include <assert.h>
 
-class Vector3ptr
-{
-	
+class Vector3ptr {
 public:
-	
-	Vector3ptr();
-	
-	Vector3ptr( Vector3* v3 );
-	
-	Vector3ptr( const float& x, const float& y, const float& z );
-	
-	~Vector3ptr();
-	
-	void init( Vector3* v3 );
-		
-	void init( const float& x, const float& y, const float& z );
-	
-	void set( const float& x, const float& y, const float& z );
-	
-	// operators
-	
-	void operator = ( const Vector3& v3 );
-	
-	void operator = ( const Vector3ptr& v3ptr );
-	
-	void operator += ( const Vector3& v3 );
-	
-	void operator -= ( const Vector3& v3 );
-	
-	const float& operator [] ( const uint8_t& i ) const;
-	
-	void operator >> ( Vector3* v3 ) const;
-	
-	Vector3* ptr() const {
-		return _v3;
-	}
-	
-	Vector3& ref() const {
-		return (*_v3);
-	}
-	
-	const bool is_initialised() const {
-		return _inititalised;
-	}
-	
-	bool is_local() const {
-		return _local;
-	}
+
+    Vector3ptr();
+
+    Vector3ptr(Vector3* v3);
+
+    Vector3ptr(const float& x, const float& y, const float& z);
+
+    ~Vector3ptr();
+
+    void init(Vector3* v3);
+
+    void init(const float& x, const float& y, const float& z);
+
+    void set(const float& x, const float& y, const float& z);
+
+    // operators
+
+    void operator=(const Vector3& v3);
+
+    void operator=(const Vector3ptr& v3ptr);
+
+    void operator+=(const Vector3& v3);
+
+    void operator-=(const Vector3& v3);
+
+    const float& operator[](const uint8_t& i) const;
+
+    void operator>>(Vector3* v3) const;
+
+    Vector3* ptr() const {
+        return _v3;
+    }
+
+    Vector3& ref() const {
+        return (*_v3);
+    }
+
+    const bool is_initialised() const {
+        return _inititalised;
+    }
+
+    bool is_local() const {
+        return _local;
+    }
 
 protected:
-	
-	Vector3* _v3;
-	bool _local;
-	bool _inititalised;
-	
-	void purge();
-	
+
+    Vector3* _v3;
+    bool _local;
+    bool _inititalised;
+
+    void purge();
+
 };
 
 #endif // VECTOR3PTR_H
