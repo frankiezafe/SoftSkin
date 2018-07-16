@@ -107,7 +107,9 @@ private:
     
     std::vector< Skin* > _skins;
         
-    void seek_skins();
+    void tree_seekup_skins( Node* n );
+    
+    bool tree_seekdown_serverskins( Node* n );
     
     
 

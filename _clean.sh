@@ -16,4 +16,4 @@
 ##
 
 cd ../godotengine/
-scons --jobs=7 platform=x11
+scons --clean platform=x11

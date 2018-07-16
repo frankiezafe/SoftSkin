@@ -42,7 +42,6 @@
  */
 
 #include "skin.h"
-#include "skindot.h"
 
 Skin::Skin() :
 SkinNotifierListener(),
@@ -63,6 +62,7 @@ _feedback_force(0, 0, 0),
 _feedback_consumed(0, 0, 0),
 _feedback_damping(0.5),
 _feedback_softness(0.5),
+_feedback(0, 0, 0),
 _main_display(true),
 _fiber_display(false),
 _tensor_display(false),
@@ -569,9 +569,20 @@ void Skin::parse(const String& path) {
 
 void Skin::update(const float& delta) {
 
-    if (!dots || !is_visible()) {
+    // from global space to local space
+
+    if (!dots || !is_visible_in_tree()) {
         return;
     }
+
+    Transform glob_t = get_global_transform();
+    Vector3 glob_p = glob_t.get_origin();
+    _delta_position = _previous_position - glob_p;
+    _previous_position = glob_p;
+
+    Transform loc_t;
+    loc_t.basis = glob_t.basis;
+    _delta_position = loc_t.basis.inverse().xform(_delta_position);
 
     if (_update_gravity) {
         Vector3 gqaxis;
@@ -594,14 +605,14 @@ void Skin::update(const float& delta) {
     for (uint32_t i = 0; i < fibers_num; ++i) {
         _feedback_force += fibers[i].update(delta);
     }
-    
-    _feedback_force *= _feedback_softness;
+
+    _feedback_force *= ( 1 - _feedback_softness );
     _feedback_consumed = _feedback_force * _feedback_damping;
     _feedback_force -= _feedback_consumed;
-    
+
     bind_root();
 
-    translate(_feedback_consumed);
+    _feedback = loc_t.xform(_feedback_force);
 
 }
 
@@ -661,7 +672,7 @@ void Skin::hit(
                     local_from +
                     ray_dir * ray.closest_result->distance_to_origin
                     );
-            ray.world_distance = ray.world_position.distance_to( from );
+            ray.world_distance = ray.world_position.distance_to(from);
             ray.success = true;
 
         }
@@ -723,6 +734,7 @@ void Skin::_notification(int p_what) {
     switch (p_what) {
         case NOTIFICATION_ENTER_TREE:
             SkinNotifier::notify(sno_SKIN_CREATED);
+            _previous_position = get_global_transform().origin;
             break;
         case NOTIFICATION_PARENTED:
         case NOTIFICATION_PATH_CHANGED:
@@ -838,7 +850,6 @@ void Skin::set_muscle_material(const Ref<Material> &material) {
     _muscle_material = material;
     if (!surfaces.empty()) {
         surfaces[surf_MUSCLE].material = _muscle_material;
-        //        surfaces[surf_RAY].material = muscle_material;
     }
 
 }
@@ -923,107 +934,71 @@ void Skin::set_local_gravity(const Vector3& g) {
 }
 
 void Skin::set_feedback_damping(const float& s) {
-    
     _feedback_damping = s;
-    
 }
-    
-void Skin::set_feedback_softness(const float& s) {
 
+void Skin::set_feedback_softness(const float& s) {
     _feedback_softness = s;
-    
 }
 
 //******************** GETTERS ********************//
 
 AABB Skin::get_aabb() const {
-
     return aabb;
-
 }
 
 PoolVector<Face3> Skin::get_faces(uint32_t p_usage_flags) const {
-
     return PoolVector<Face3>();
-
 }
 
 float Skin::ligament_strength() const {
-
     return _ligament_strength;
-
 }
 
 float Skin::tensor_frequency() const {
-
     return _tensor_frequency;
-
 }
 
 float Skin::tensor_mult_min() const {
-
     return _tensor_mult_min;
-
 }
 
 float Skin::tensor_mult_max() const {
-
     return _tensor_mult_max;
-
 }
 
 Ref<Material> Skin::main_material() const {
-
     return _main_material;
-
 }
 
 Ref<Material> Skin::fiber_material() const {
-
     return _fiber_material;
-
 }
 
 Ref<Material> Skin::tensor_material() const {
-
     return _tensor_material;
-
 }
 
 Ref<Material> Skin::ligament_material() const {
-
     return _ligament_material;
-
 }
 
 Ref<Material> Skin::muscle_material() const {
-
     return _muscle_material;
-
 }
 
 int Skin::type() const {
-
     if (!dots && _soft_skin_path == "") {
-
         return 0;
-
     } else if (_soft_skin_path != "") {
-
         return 1;
-
     } else {
-
         return 2;
-
     }
-
 }
 
 String Skin::soft_skin_path() const {
-
     return _soft_skin_path;
-
 }
 
 bool Skin::main_display() const {
@@ -1047,15 +1022,23 @@ bool Skin::muscle_display() const {
 }
 
 float Skin::feedback_damping() const {
-
     return _feedback_damping;
-    
 }
 
-float  Skin::feedback_softness() const {
-
+float Skin::feedback_softness() const {
     return _feedback_softness;
-    
+}
+
+const Vector3& Skin::feedback() const {
+    return _feedback;
+}
+
+const Vector3& Skin::delta_position() const {
+    return _delta_position;
+}
+
+const Vector3& Skin::local_motion_orientation() const {
+    return _local_motion_orientation;
 }
 
 Vector3 Skin::local_gravity() const {
@@ -1108,11 +1091,15 @@ void Skin::_bind_methods() {
 
     ClassDB::bind_method(D_METHOD("set_local_gravity", "g"), &Skin::set_local_gravity);
     ClassDB::bind_method(D_METHOD("local_gravity"), &Skin::local_gravity);
-    
+
     ClassDB::bind_method(D_METHOD("set_feedback_damping", "s"), &Skin::set_feedback_damping);
     ClassDB::bind_method(D_METHOD("feedback_damping"), &Skin::feedback_damping);
     ClassDB::bind_method(D_METHOD("set_feedback_softness", "s"), &Skin::set_feedback_softness);
     ClassDB::bind_method(D_METHOD("feedback_softness"), &Skin::feedback_softness);
+
+    ClassDB::bind_method(D_METHOD("feedback"), &Skin::feedback);
+    ClassDB::bind_method(D_METHOD("delta_position"), &Skin::delta_position);
+    ClassDB::bind_method(D_METHOD("local_motion_orientation"), &Skin::local_motion_orientation);
 
     ADD_GROUP("Configuration", "conf_");
 
@@ -1127,17 +1114,17 @@ void Skin::_bind_methods() {
             "set_soft_skin_path",
             "soft_skin_path");
 
-//    ADD_PROPERTY(PropertyInfo(Variant::VECTOR3,
-//            "conf_gravity", PROPERTY_HINT_NONE),
-//            "set_local_gravity",
-//            "local_gravity");
-    
+    //    ADD_PROPERTY(PropertyInfo(Variant::VECTOR3,
+    //            "conf_gravity", PROPERTY_HINT_NONE),
+    //            "set_local_gravity",
+    //            "local_gravity");
+
     ADD_PROPERTY(PropertyInfo(Variant::REAL,
             "conf_damping", PROPERTY_HINT_RANGE,
             "0.0,1.0,0.00001"),
             "set_feedback_damping",
             "feedback_damping");
-    
+
     ADD_PROPERTY(PropertyInfo(Variant::REAL,
             "conf_softness", PROPERTY_HINT_RANGE,
             "0.0,1.0,0.00001"),

@@ -52,6 +52,8 @@
 #include "skincommon.h"
 #include "skinnotifier.h"
 
+#include "scene/3d/immediate_geometry.h"
+
 class Skin : public VisualInstance, public SkinNotifierListener {
     GDCLASS(Skin, VisualInstance);
 
@@ -128,6 +130,8 @@ public:
     void set_ligament_material(const Ref<Material> &material);
 
     void set_muscle_material(const Ref<Material> &material);
+
+    void set_axis_material(const Ref<Material> &material);
     
     void set_feedback_damping(const float& s);
     
@@ -168,10 +172,18 @@ public:
     Ref<Material> ligament_material() const;
 
     Ref<Material> muscle_material() const;
+
+    Ref<Material> axis_material() const;
     
     float feedback_damping() const;
     
     float feedback_softness() const;
+    
+    const Vector3& feedback() const;
+    
+    const Vector3& delta_position() const;
+    
+    const Vector3& local_motion_orientation() const;
 
     // mandatory methods for VisualInstance
     virtual AABB get_aabb() const;
@@ -206,8 +218,16 @@ private:
     
     Vector3 _feedback_force;
     Vector3 _feedback_consumed;
+    
+    Vector3 _feedback;
     float _feedback_damping;
     float _feedback_softness;
+    
+    Quat _previous_orientation;
+    Vector3 _previous_position;
+    Vector3 _delta_position;
+    
+    Vector3 _local_motion_orientation;
 
     Ref<ArrayMesh> root_mesh;
     Vector<ShapeUpdateSurface> surfaces;
@@ -225,7 +245,7 @@ private:
     Ref<Material> _tensor_material;
     Ref<Material> _ligament_material;
     Ref<Material> _muscle_material;
-
+    
     void purge();
 
     void generate(SkinRaw& raw);

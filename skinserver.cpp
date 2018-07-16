@@ -161,20 +161,49 @@ void SkinServer::_notification(int p_what) {
 
 }
 
-void SkinServer::seek_skins() {
+bool SkinServer::tree_seekdown_serverskins( Node* n ) {
 
-    _skins.clear();
+    Node* p = n->get_parent();
+    
+    if ( !p ) {
+        return false;
+    } else if ( p->is_class("SkinServer") ) { 
+        return true;
+    } else {
+        return tree_seekdown_serverskins( p );
+    }
+    
+}
 
-    int cc = get_child_count();
+void SkinServer::tree_seekup_skins(Node* n) {
 
+    if (n == this) {
+        
+        _skins.clear();
+        
+        // verify that there are NO SkinServer in parents
+        if ( tree_seekdown_serverskins( this ) ) {
+            
+            std::cout << "SkinServer::tree_seekup_skins, " <<
+                    "as it is forbidden to parent SkinServer, " <<
+                    "current server will not host any Skins..." <<
+                    std::endl;
+            return;
+            
+        }
+        
+    }
+
+    int cc = n->get_child_count();
     for (int i = 0; i < cc; ++i) {
 
-        Node* sn = get_child(i);
+        Node* sn = n->get_child(i);
 
         if (sn->is_class("Skin")) {
             _skins.push_back((Skin*) sn);
         } else {
-            std::cout << "Child " << i << " is not a Skin" << std::endl;
+//            std::cout << "Child " << i << " is not a Skin" << std::endl;
+            tree_seekup_skins( sn );
         }
 
     }
@@ -192,7 +221,7 @@ void SkinServer::skin_notification(const skin_notification_t& what) {
         case sno_SKIN_CREATED:
         case sno_SKIN_MOVED:
         case sno_SKIN_DELETED:
-            seek_skins();
+            tree_seekup_skins(this);
             break;
 
     }
@@ -208,11 +237,11 @@ const Vector3& SkinServer::hit_point() const {
 const Vector3& SkinServer::drag_point(const Vector3& from, const Vector3& to) {
 
     if (_hit_point.closest_result) {
-        
+
         // rendering world position based on world_distance
-        Vector3 dir = to - from;        
-        _hit_point.world_position = 
-                from + 
+        Vector3 dir = to - from;
+        _hit_point.world_position =
+                from +
                 dir.normalized() * _hit_point.world_distance;
 
         skinray_map_iterator itr = _hit_point.results.begin();
@@ -270,11 +299,11 @@ bool SkinServer::hit(
                 SkinRayResult& srr = (*itrv);
 
                 std::cout << "testing point: " <<
-                            srr.skin_ptr << " : " <<
-                            srr.dot_index << ", " <<
-                            srr.distance_to_origin << " <> " << 
-                            _hit_point.closest_result->distance_to_origin << 
-                            std::endl;
+                        srr.skin_ptr << " : " <<
+                        srr.dot_index << ", " <<
+                        srr.distance_to_origin << " <> " <<
+                        _hit_point.closest_result->distance_to_origin <<
+                        std::endl;
 
                 if (
                         srr.distance_to_origin -
@@ -289,8 +318,8 @@ bool SkinServer::hit(
                             _hit_point.closest_result->distance_to_origin
                             ) / radius
                             );
-                    
-                    
+
+
 
                     std::cout << "valid point: " <<
                             srr.skin_ptr << " : " <<
