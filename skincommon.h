@@ -77,14 +77,24 @@ struct ShapeUpdateSurface {
     PoolVector<Vector3> normals;
     PoolVector<int> indices;
     PoolVector<Vector2> uvs;
+    PoolVector<Vector2> uvs2;
     Ref<Material> material;
     int last_added;
     PoolVector<Vector3>::Write verticesw;
+    bool normal_enabled;
     PoolVector<Vector3>::Write normalsw;
     PoolVector<int>::Write indicesw;
+    bool uv_enabled;
     PoolVector<Vector2>::Write uvsw;
+    bool uv2_enabled;
+    PoolVector<Vector2>::Write uvs2w;
 
-    ShapeUpdateSurface() : type(0), enabled(false) {
+    ShapeUpdateSurface() :
+    type(0),
+    enabled(false),
+    normal_enabled(false),
+    uv_enabled(false),
+    uv2_enabled(false) {
     }
 };
 
@@ -128,23 +138,24 @@ protected:
 
 class SkinRayResult {
 public:
-    
+
     void* skin_ptr;
     uint32_t dot_index;
     real_t distance_to_origin;
     real_t dot_to_ray;
     real_t distance_to_ray;
     real_t influence;
-    
-    SkinRayResult() : 
+
+    SkinRayResult() :
     skin_ptr(0),
-    dot_index( std::numeric_limits<uint32_t>::max() ),
+    dot_index(std::numeric_limits<uint32_t>::max()),
     distance_to_origin(0),
     dot_to_ray(0),
     distance_to_ray(0),
-    influence(0) {}
-    
-    void operator=( const SkinRayResult& src ) {
+    influence(0) {
+    }
+
+    void operator=(const SkinRayResult& src) {
         skin_ptr = src.skin_ptr;
         dot_index = src.dot_index;
         distance_to_origin = src.distance_to_origin;
@@ -152,7 +163,7 @@ public:
         distance_to_ray = src.distance_to_ray;
         influence = src.influence;
     }
-    
+
 };
 
 typedef std::vector<SkinRayResult> skinresult_vector;
@@ -171,22 +182,21 @@ public:
      * It will be analysed by the server once all skins have been visited.
      */
     skinray_map results;
-    
+
     SkinRayResult* closest_result;
 
     SkinRay() :
     success(false),
-    closest_result(0)
-    {
+    closest_result(0) {
     }
-    
+
     ~SkinRay() {
         reset();
     }
-    
+
     void reset() {
         success = false;
-        if ( closest_result ) {
+        if (closest_result) {
             delete closest_result;
         }
         closest_result = 0;
