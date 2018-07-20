@@ -58,6 +58,7 @@
 // decompression data
 
 struct SkinRaw {
+    
     bool vpass;
     bool epass;
     bool fpass;
@@ -75,24 +76,30 @@ struct ShapeUpdateSurface {
     bool enabled;
     PoolVector<Vector3> vertices;
     PoolVector<Vector3> normals;
+    PoolVector<Vector3> tangents;
     PoolVector<int> indices;
     PoolVector<Vector2> uvs;
     PoolVector<Vector2> uvs2;
     Ref<Material> material;
     int last_added;
+
     PoolVector<Vector3>::Write verticesw;
-    bool normal_enabled;
     PoolVector<Vector3>::Write normalsw;
+    PoolVector<Vector3>::Write tangentsw;
     PoolVector<int>::Write indicesw;
-    bool uv_enabled;
     PoolVector<Vector2>::Write uvsw;
-    bool uv2_enabled;
     PoolVector<Vector2>::Write uvs2w;
+    
+    bool normal_enabled;
+    bool tangent_enabled;
+    bool uv_enabled;
+    bool uv2_enabled;
 
     ShapeUpdateSurface() :
     type(0),
     enabled(false),
     normal_enabled(false),
+    tangent_enabled(false),
     uv_enabled(false),
     uv2_enabled(false) {
     }

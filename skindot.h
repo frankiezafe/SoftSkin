@@ -50,20 +50,22 @@
 #include <ostream>
 #include <vector>
 #include "vector3.h"
-#include "vector3ptr.h"
+#include "vectorptr.h"
 
 #include "skincommon.h"
 
 class SkinDot {
-    
     // in case there is more than 1 usage of the vertice
     // in the mesh
 
-    struct SkinDotMirror {
+    template <typename S, typename T>
+    class SkinDotMirror {
+    public:
+
         bool empty;
-        Vector3ptr* src;
-        std::vector< Vector3* > vec3s;
-        std::vector< Vector3* >::iterator vec3s_end;
+        S* src;
+        typename std::vector< T* > vecs;
+        typename std::vector< T* >::iterator vecs_end;
 
         SkinDotMirror() : empty(true), src(0) {
         }
@@ -72,12 +74,12 @@ class SkinDot {
             src != 0;
         }
 
-        void add(Vector3* v) {
-
+        void add(T* v) {
+            
             assert(src != 0);
-
-            vec3s.push_back(v);
-            vec3s_end = vec3s.end();
+            
+            vecs.push_back(v);
+            vecs_end = vecs.end();
             empty = false;
 
         }
@@ -90,8 +92,8 @@ class SkinDot {
 
             assert(src != 0);
 
-            std::vector< Vector3* >::iterator it = vec3s.begin();
-            for (; it < vec3s_end; ++it) {
+            typename std::vector< T* >::iterator it = vecs.begin();
+            for (; it < vecs_end; ++it) {
                 (*src) >> (*it);
             }
 
@@ -106,25 +108,29 @@ public:
 
     SkinDot(const float& x, const float& y, const float& z);
 
-    SkinDot(Vector3* vert, Vector3* normal, Vector3* force);
+    SkinDot(Vector3* vert, Vector3* normal, Vector3* force, Vector2* uv2 = 0);
 
     void init(const float& x, const float& y, const float& z);
 
-    void init(Vector3* vert, Vector3* normal, Vector3* force);
+    void init(Vector3* vert, Vector3* normal, Vector3* force, Vector2* uv2 = 0);
 
     void register_vert(Vector3* vert);
 
     void register_normal(Vector3* normal);
 
     void register_force(Vector3* force);
+    
+    void register_uv2(Vector2* uv2);
 
     void push(const Vector3& f);
 
-    const Vector3ptr& vert() const;
+    const VectorPtr< Vector3 >& vert() const;
 
-    const Vector3ptr& force() const;
+    const VectorPtr< Vector3 >& force() const;
 
-    const Vector3ptr& normal() const;
+    const VectorPtr< Vector3 >& normal() const;
+    
+    const VectorPtr< Vector2 >& uv2() const;
 
     const float& damping() const;
 
@@ -146,7 +152,10 @@ public:
 
     void operator=(const SkinDot& src);
 
-    friend std::ostream &operator<<(std::ostream &os, SkinDot const &sd) {
+    friend std::ostream &operator<<(
+            std::ostream &os,
+            SkinDot const &sd
+            ) {
 
         return os <<
                 sd.vert()[0] << ", " <<
@@ -154,28 +163,33 @@ public:
                 sd.vert()[0];
 
     }
-    
-    void ray_distance( 
-        const Vector3& origin, 
-        const Vector3& ray,
-        SkinRayResult& result
-    );
+
+    void ray_distance(
+            const Vector3& origin,
+            const Vector3& ray,
+            SkinRayResult& result
+            );
 
 protected:
 
     // 	static void _bind_methods();
 
 private:
+    
+    Vector3 _vert_origin;
+    float _total_push_length;
 
-    Vector3ptr _vert;
-    Vector3ptr _normal;
-    Vector3ptr _force;
+    VectorPtr< Vector3 > _vert;
+    VectorPtr< Vector3 > _normal;
+    VectorPtr< Vector3 > _force;
+    VectorPtr< Vector2 > _uv2;
     float _damping;
     uint16_t _kicks;
 
-    SkinDotMirror mirror_verts;
-    SkinDotMirror mirror_normals;
-    SkinDotMirror mirror_forces;
+    SkinDotMirror<VectorPtr< Vector3 >, Vector3> mirror_verts;
+    SkinDotMirror<VectorPtr< Vector3 >, Vector3> mirror_normals;
+    SkinDotMirror<VectorPtr< Vector3 >, Vector3> mirror_forces;
+    SkinDotMirror<VectorPtr< Vector2 >, Vector2> mirror_uv2s;
 
     bool _inititalised;
 

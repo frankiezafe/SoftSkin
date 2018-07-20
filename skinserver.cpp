@@ -298,12 +298,12 @@ bool SkinServer::hit(
 
                 SkinRayResult& srr = (*itrv);
 
-                std::cout << "testing point: " <<
-                        srr.skin_ptr << " : " <<
-                        srr.dot_index << ", " <<
-                        srr.distance_to_origin << " <> " <<
-                        _hit_point.closest_result->distance_to_origin <<
-                        std::endl;
+//                std::cout << "testing point: " <<
+//                        srr.skin_ptr << " : " <<
+//                        srr.dot_index << ", " <<
+//                        srr.distance_to_origin << " <> " <<
+//                        _hit_point.closest_result->distance_to_origin <<
+//                        std::endl;
 
                 if (
                         srr.distance_to_origin -
@@ -321,10 +321,10 @@ bool SkinServer::hit(
 
 
 
-                    std::cout << "valid point: " <<
-                            srr.skin_ptr << " : " <<
-                            srr.dot_index << ", " <<
-                            srr.influence << std::endl;
+//                    std::cout << "valid point: " <<
+//                            srr.skin_ptr << " : " <<
+//                            srr.dot_index << ", " <<
+//                            srr.influence << std::endl;
 
                     valids.push_back(srr);
 

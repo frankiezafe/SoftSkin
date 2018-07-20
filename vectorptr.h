@@ -43,67 +43,133 @@
  * 
  */
 
-#ifndef VECTOR3PTR_H
-#define VECTOR3PTR_H
+#ifndef VECTORPTR_H
+#define VECTORPTR_H
 
 #include "vector3.h"
 #include <assert.h>
 
-class Vector3ptr {
+template< class T > 
+class VectorPtr {
 public:
 
-    Vector3ptr();
+    VectorPtr() :
+    _vecptr(0),
+    _local(false),
+    _inititalised(false) {
+    }
 
-    Vector3ptr(Vector3* v3);
+    VectorPtr(T* src) :
+    _vecptr(src),
+    _local(false),
+    _inititalised(false) {
+    }
 
-    Vector3ptr(const float& x, const float& y, const float& z);
+    VectorPtr(const T& src) :
+    _local(true),
+    _inititalised(false) {
 
-    ~Vector3ptr();
+        _vecptr = new T();
+        (*_vecptr) = src;
 
-    void init(Vector3* v3);
+    }
 
-    void init(const float& x, const float& y, const float& z);
+    ~VectorPtr() {
+        purge();
+    }
 
-    void set(const float& x, const float& y, const float& z);
+    void init(T* src) {
+
+        purge();
+
+        if (src) {
+            _local = false;
+            _vecptr = src;
+            _inititalised = true;
+        }
+
+    }
+
+    void init(const T& src) {
+
+        purge();
+        
+        _local = true;
+        _vecptr = new T();
+        (*_vecptr) = src;
+        _inititalised = true;
+
+    }
 
     // operators
 
-    void operator=(const Vector3& v3);
-
-    void operator=(const Vector3ptr& v3ptr);
-
-    void operator+=(const Vector3& v3);
-
-    void operator-=(const Vector3& v3);
-
-    const float& operator[](const uint8_t& i) const;
-
-    void operator>>(Vector3* v3) const;
-
-    Vector3* ptr() const {
-        return _v3;
+    _FORCE_INLINE_ void operator=(const T& src) {
+        assert(_inititalised);
+        (*_vecptr) = src;
     }
 
-    Vector3& ref() const {
-        return (*_v3);
+    _FORCE_INLINE_ void operator=(const VectorPtr& srcptr) {
+        assert(_inititalised);
+        (*_vecptr) = srcptr.ref();
     }
 
-    const bool is_initialised() const {
+    _FORCE_INLINE_ void operator+=(const T& src) {
+        assert(_inititalised);
+        (*_vecptr) += src;
+    }
+
+    _FORCE_INLINE_ void operator-=(const T& src) {
+        assert(_inititalised);
+        (*_vecptr) -= src;
+    }
+
+    _FORCE_INLINE_ const float& operator[](const uint8_t& i) const {
+        assert(_inititalised);
+        return (*_vecptr)[i];
+    }
+
+    _FORCE_INLINE_ void operator>>(T* src) const {
+        assert(_inititalised);
+        (*src) = (*_vecptr);
+    }
+
+    // getters
+
+    _FORCE_INLINE_ T* ptr() const {
+        return _vecptr;
+    }
+
+    _FORCE_INLINE_ T& ref() const {
+        return (*_vecptr);
+    }
+
+    _FORCE_INLINE_ const bool is_initialised() const {
         return _inititalised;
     }
 
-    bool is_local() const {
+    _FORCE_INLINE_ bool is_local() const {
         return _local;
     }
 
 protected:
 
-    Vector3* _v3;
+    T* _vecptr;
+    uint8_t _dlen;
     bool _local;
     bool _inititalised;
 
-    void purge();
+    void purge() {
+
+        if (_local) {
+            delete _vecptr;
+        }
+        
+        _vecptr = 0;
+        _local = false;
+        _inititalised = false;
+
+    }
 
 };
 
-#endif // VECTOR3PTR_H
+#endif // VECTORPTR_H

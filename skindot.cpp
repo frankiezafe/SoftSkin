@@ -56,32 +56,49 @@ _inititalised(false) {
 
 }
 
-SkinDot::SkinDot(Vector3* vert, Vector3* normal, Vector3* force) :
+SkinDot::SkinDot(
+        Vector3* vert,
+        Vector3* normal,
+        Vector3* force,
+        Vector2* uv2
+        ) :
 _inititalised(false) {
 
-    init(vert, normal, force);
+    init(vert, normal, force, uv2);
 
 }
 
 void SkinDot::init(const float& x, const float& y, const float& z) {
 
-    _vert.init(x, y, z);
-    _normal.init(0, 0, 0);
-    _force.init(0, 0, 0);
+    _vert.init(Vector3(x, y, z));
+    _normal.init(Vector3(0, 0, 0));
+    _force.init(Vector3(0, 0, 0));
+    _uv2.init(0);
+
     init_internal();
 
 }
 
-void SkinDot::init(Vector3* vert, Vector3* normal, Vector3* force) {
+void SkinDot::init(
+        Vector3* vert,
+        Vector3* normal,
+        Vector3* force,
+        Vector2* uv2
+        ) {
 
     _vert.init(vert);
     _normal.init(normal);
     _force.init(force);
+    _uv2.init(uv2);
+
     init_internal();
 
 }
 
 void SkinDot::init_internal() {
+
+    _vert_origin = _vert.ref();
+    _total_push_length = 0;
 
     _damping = 1;
     _kicks = 0;
@@ -89,6 +106,7 @@ void SkinDot::init_internal() {
     mirror_verts.src = &_vert;
     mirror_normals.src = &_normal;
     mirror_forces.src = &_force;
+    mirror_uv2s.src = &_uv2;
 
     _inititalised = true;
 
@@ -118,28 +136,45 @@ void SkinDot::register_force(Vector3* force) {
 
 }
 
+void SkinDot::register_uv2(Vector2* uv2) {
+
+    assert(_inititalised);
+
+    if (_uv2.is_initialised()) {
+        mirror_uv2s.add(uv2);
+    }
+
+}
+
 void SkinDot::push(const Vector3& f) {
 
     _force += f;
+    _total_push_length += f.length_squared();
     _kicks++;
 
 }
 
-const Vector3ptr& SkinDot::vert() const {
+const VectorPtr< Vector3 >& SkinDot::vert() const {
 
     return _vert;
 
 }
 
-const Vector3ptr& SkinDot::force() const {
+const VectorPtr< Vector3 >& SkinDot::force() const {
 
     return _force;
 
 }
 
-const Vector3ptr& SkinDot::normal() const {
+const VectorPtr< Vector3 >& SkinDot::normal() const {
 
     return _normal;
+
+}
+
+const VectorPtr< Vector2 >& SkinDot::uv2() const {
+
+    return _uv2;
 
 }
 
@@ -157,13 +192,13 @@ const float& SkinDot::kicks() const {
 
 void SkinDot::vert(const float& x, const float& y, const float& z) {
 
-    _vert.set(x, y, z);
+    _vert = Vector3(x, y, z);
 
 }
 
 void SkinDot::normal(const float& x, const float& y, const float& z) {
 
-    _normal.set(x, y, z);
+    _normal = Vector3(x, y, z);
 
 }
 
@@ -178,6 +213,7 @@ void SkinDot::operator=(const SkinDot& src) {
     _vert = src.vert();
     _normal = src.normal();
     _force = src.force();
+    _uv2 = src.uv2();
     _damping = src.damping();
     _kicks = src.kicks();
 
@@ -193,12 +229,26 @@ const Vector3& SkinDot::update(const float& delta_time) {
     _force -= consumed;
     _vert += consumed;
     // 	_vert += _normal.ref() * delta_time * 0.1;
-    _kicks = 0;
+
 
     mirror_verts.sync();
     mirror_normals.sync();
     mirror_forces.sync();
-    
+
+    if (_uv2.is_initialised()) {
+        
+        // X is instantaneous consumed force
+        // Y is total strength received in the pass
+        _uv2 = Vector2(
+                consumed.length_squared(),
+                _total_push_length
+                );
+        mirror_uv2s.sync();
+    }
+
+    _total_push_length = _force.ref().length_squared();
+    _kicks = 0;
+
     return _vert.ref();
 
 }
@@ -207,10 +257,10 @@ void SkinDot::ray_distance(
         const Vector3& origin,
         const Vector3& ray,
         SkinRayResult& result) {
-    
+
     Vector3 diff = _vert.ref() - origin;
     result.distance_to_origin = diff.length();
-    result.dot_to_ray = ray.dot( diff / result.distance_to_origin );
+    result.dot_to_ray = ray.dot(diff / result.distance_to_origin);
     Vector3 perp = diff - ray * result.dot_to_ray * result.distance_to_origin;
     result.distance_to_ray = perp.length();
 

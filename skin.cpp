@@ -115,11 +115,12 @@ void Skin::bind_root() {
 
     for (uint32_t i = 0; i < surf_COUNT; ++i) {
 
-        surfaces[i].verticesw = PoolVector<Vector3>::Write();
-        surfaces[i].normalsw = PoolVector<Vector3>::Write();
-        surfaces[i].uvsw = PoolVector<Vector2>::Write();
-        surfaces[i].uvs2w = PoolVector<Vector2>::Write();
-        surfaces[i].indicesw = PoolVector<int>::Write();
+//        surfaces[i].verticesw = PoolVector<Vector3>::Write();
+//        surfaces[i].normalsw = PoolVector<Vector3>::Write();
+//        surfaces[i].tangentsw = PoolVector<Vector3>::Write();
+//        surfaces[i].uvsw = PoolVector<Vector2>::Write();
+//        surfaces[i].uvs2w = PoolVector<Vector2>::Write();
+//        surfaces[i].indicesw = PoolVector<int>::Write();
 
         if (
                 !surfaces[i].enabled ||
@@ -182,39 +183,76 @@ void Skin::generate(SkinRaw& raw) {
     surfaces[surf_MAIN].enabled = _main_display;
     surfaces[surf_MAIN].material = _main_material;
 
+    Vector< uint32_t > surfmain_vert_ids;
+    // generation of triangles in quads, splitting along 0 - 2 edge
+    int quad_vert_order[]{
+        2, 1, 0,
+        0, 3, 2
+    };
     uint32_t indices = 0;
 
     for (uint32_t i = 0; i < faces_num; ++i) {
 
         Vector<float>& fids = raw.faces[i];
-        int j = fids.size() - 1;
-        switch (j) {
-            case 2: // tri, no uv info
-                for (uint8_t k = 0; k < 3; ++k) {
-                    Vector<float>& vert = raw.verts[int(fids[k])];
-                    surfaces[surf_MAIN].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
-                    surfaces[surf_MAIN].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
-                    surfaces[surf_MAIN].normal_enabled = true;
-                    surfaces[surf_MAIN].indices.push_back(indices);
-                    ++indices;
-                }
-                break;
-            case 8: // tri with uv
+        int ls = fids.size();
+        
+//        Vector3 tangent;
+//        for ( uint8_t ti = 0; ti < 3; ++ti ) {
+//            tangent[ti] = 
+//                    raw.verts[int(fids[1])][1] -
+//                    raw.verts[int(fids[0])][1];
+//        }
+//        tangent.normalize();
+        
+        switch (ls) {
+            case 3: // tri, no uv info
+            case 9: // tri with uv
             {
+                surfaces[surf_MAIN].uv_enabled = (ls == 9);
+                surfaces[surf_MAIN].uv2_enabled = (ls == 9);
                 for (uint8_t k = 0; k < 3; ++k) {
-                    Vector<float>& vert = raw.verts[int(fids[k])];
+                    int vid = int(fids[2 - k]);
+                    surfmain_vert_ids.push_back(vid);
+                    Vector<float>& vert = raw.verts[vid];
                     surfaces[surf_MAIN].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
                     surfaces[surf_MAIN].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
                     surfaces[surf_MAIN].normal_enabled = true;
+//                    surfaces[surf_MAIN].tangents.push_back(tangent);
+//                    surfaces[surf_MAIN].tangent_enabled = true;
+                    if (surfaces[surf_MAIN].uv_enabled) {
+                        // uv retrieval
+                        int uvid = (2 - k) * 2 + 3;
+                        surfaces[surf_MAIN].uvs.push_back(Vector2(fids[uvid], fids[uvid + 1]));
+                        surfaces[surf_MAIN].uvs2.push_back(Vector2(0, 0));
+                    }
                     surfaces[surf_MAIN].indices.push_back(indices);
                     ++indices;
                 }
-                for (uint8_t k = 3; k < 8; k += 2) {
-                    surfaces[surf_MAIN].uvs.push_back(Vector2(fids[k], fids[k + 1]));
-                    surfaces[surf_MAIN].uvs2.push_back(Vector2(0, 0));
+            }
+                break;
+            case 4: // quad, no uv info
+            case 12: // quad with uv
+            {
+                surfaces[surf_MAIN].uv_enabled = (ls == 12);
+                surfaces[surf_MAIN].uv2_enabled = (ls == 12);
+                for (uint8_t k = 0; k < 6; ++k) {
+                    int vid = int(fids[quad_vert_order[k]]);
+                    surfmain_vert_ids.push_back(vid);
+                    Vector<float>& vert = raw.verts[vid];
+                    surfaces[surf_MAIN].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
+                    surfaces[surf_MAIN].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
+                    surfaces[surf_MAIN].normal_enabled = true;
+//                    surfaces[surf_MAIN].tangents.push_back(tangent);
+//                    surfaces[surf_MAIN].tangent_enabled = true;
+                    if (surfaces[surf_MAIN].uv_enabled) {
+                        // uv retrieval
+                        int uvid = quad_vert_order[k] * 2 + 4;
+                        surfaces[surf_MAIN].uvs.push_back(Vector2(fids[uvid], fids[uvid + 1]));
+                        surfaces[surf_MAIN].uvs2.push_back(Vector2(0, 0));
+                    }
+                    surfaces[surf_MAIN].indices.push_back(indices);
+                    ++indices;
                 }
-                surfaces[surf_MAIN].uv_enabled = true;
-                surfaces[surf_MAIN].uv2_enabled = true;
             }
                 break;
             default:
@@ -224,59 +262,64 @@ void Skin::generate(SkinRaw& raw) {
 
     }
 
-    // ********** DEBUG FIBERS **********
-    surfaces[surf_FIBER].type = Mesh::PRIMITIVE_LINES;
-    surfaces[surf_FIBER].enabled = _fiber_display;
-    surfaces[surf_FIBER].material = _fiber_material;
-    for (uint32_t i = 0; i < dots_num; ++i) {
-        Vector<float>& vert = raw.verts[i];
-        surfaces[surf_FIBER].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
-        surfaces[surf_FIBER].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
-        surfaces[surf_TENSOR].normal_enabled = true;
-    }
-    for (uint32_t i = 0; i < fibers_num; ++i) {
-        Vector<int>& vs = raw.edges[i];
-        if (vs[2] == 0) {
-            surfaces[surf_FIBER].indices.push_back(vs[0]);
-            surfaces[surf_FIBER].indices.push_back(vs[1]);
-        }
-    }
+    // ********** DEBUGGERS **********
+    {
 
-    // ********** DEBUG TENSORS **********
-    surfaces[surf_TENSOR].type = Mesh::PRIMITIVE_LINES;
-    surfaces[surf_TENSOR].enabled = _tensor_display;
-    surfaces[surf_TENSOR].material = _tensor_material;
-    for (uint32_t i = 0; i < dots_num; ++i) {
-        Vector<float>& vert = raw.verts[i];
-        surfaces[surf_TENSOR].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
-        surfaces[surf_TENSOR].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
-        surfaces[surf_TENSOR].normal_enabled = true;
-    }
-    for (uint32_t i = 0; i < fibers_num; ++i) {
-        Vector<int>& vs = raw.edges[i];
-        if (vs[2] != 0) {
-            surfaces[surf_TENSOR].indices.push_back(vs[0]);
-            surfaces[surf_TENSOR].indices.push_back(vs[1]);
+        // ********** DEBUG FIBERS **********
+        surfaces[surf_FIBER].type = Mesh::PRIMITIVE_LINES;
+        surfaces[surf_FIBER].enabled = _fiber_display;
+        surfaces[surf_FIBER].material = _fiber_material;
+        for (uint32_t i = 0; i < dots_num; ++i) {
+            Vector<float>& vert = raw.verts[i];
+            surfaces[surf_FIBER].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
+            surfaces[surf_FIBER].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
+            surfaces[surf_TENSOR].normal_enabled = true;
         }
-    }
+        for (uint32_t i = 0; i < fibers_num; ++i) {
+            Vector<int>& vs = raw.edges[i];
+            if (vs[2] == 0) {
+                surfaces[surf_FIBER].indices.push_back(vs[0]);
+                surfaces[surf_FIBER].indices.push_back(vs[1]);
+            }
+        }
 
-    // ********** DEBUG LIGAMENTS **********
-    surfaces[surf_LIGAMENT].enabled = false;
-    if (!raw.ligaments.empty()) {
-        surfaces[surf_LIGAMENT].type = Mesh::PRIMITIVE_LINES;
-        surfaces[surf_LIGAMENT].enabled = _ligament_display;
-        surfaces[surf_LIGAMENT].material = _ligament_material;
-        uint32_t ligmax = raw.ligaments.size();
-        for (uint32_t i = 0; i < ligmax; ++i) {
-            Vector<float>& vert = raw.verts[ raw.ligaments[i] ];
-            surfaces[surf_LIGAMENT].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
-            surfaces[surf_LIGAMENT].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
-            surfaces[surf_LIGAMENT].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
-            surfaces[surf_LIGAMENT].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
-            surfaces[surf_LIGAMENT].normal_enabled = true;
-            surfaces[surf_LIGAMENT].indices.push_back((i * 2) + 0);
-            surfaces[surf_LIGAMENT].indices.push_back((i * 2) + 1);
+        // ********** DEBUG TENSORS **********
+        surfaces[surf_TENSOR].type = Mesh::PRIMITIVE_LINES;
+        surfaces[surf_TENSOR].enabled = _tensor_display;
+        surfaces[surf_TENSOR].material = _tensor_material;
+        for (uint32_t i = 0; i < dots_num; ++i) {
+            Vector<float>& vert = raw.verts[i];
+            surfaces[surf_TENSOR].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
+            surfaces[surf_TENSOR].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
+            surfaces[surf_TENSOR].normal_enabled = true;
         }
+        for (uint32_t i = 0; i < fibers_num; ++i) {
+            Vector<int>& vs = raw.edges[i];
+            if (vs[2] != 0) {
+                surfaces[surf_TENSOR].indices.push_back(vs[0]);
+                surfaces[surf_TENSOR].indices.push_back(vs[1]);
+            }
+        }
+
+        // ********** DEBUG LIGAMENTS **********
+        surfaces[surf_LIGAMENT].enabled = false;
+        if (!raw.ligaments.empty()) {
+            surfaces[surf_LIGAMENT].type = Mesh::PRIMITIVE_LINES;
+            surfaces[surf_LIGAMENT].enabled = _ligament_display;
+            surfaces[surf_LIGAMENT].material = _ligament_material;
+            uint32_t ligmax = raw.ligaments.size();
+            for (uint32_t i = 0; i < ligmax; ++i) {
+                Vector<float>& vert = raw.verts[ raw.ligaments[i] ];
+                surfaces[surf_LIGAMENT].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
+                surfaces[surf_LIGAMENT].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
+                surfaces[surf_LIGAMENT].vertices.push_back(Vector3(vert[1], vert[2], vert[3]));
+                surfaces[surf_LIGAMENT].normals.push_back(Vector3(vert[4], vert[5], vert[6]));
+                surfaces[surf_LIGAMENT].normal_enabled = true;
+                surfaces[surf_LIGAMENT].indices.push_back((i * 2) + 0);
+                surfaces[surf_LIGAMENT].indices.push_back((i * 2) + 1);
+            }
+        }
+
     }
 
     // linking all poolvector writters
@@ -284,6 +327,7 @@ void Skin::generate(SkinRaw& raw) {
         surfaces[i].verticesw = surfaces[i].vertices.write();
         surfaces[i].indicesw = surfaces[i].indices.write();
         surfaces[i].normalsw = surfaces[i].normals.write();
+        surfaces[i].tangentsw = surfaces[i].tangents.write();
         surfaces[i].uvsw = surfaces[i].uvs.write();
         surfaces[i].uvs2w = surfaces[i].uvs2.write();
     }
@@ -292,41 +336,39 @@ void Skin::generate(SkinRaw& raw) {
     dots = memnew_arr(SkinDot, dots_num);
     forces = memnew_arr(Vector3, dots_num);
 
-    indices = 0;
+    int vnum = surfmain_vert_ids.size();
 
-    for (uint32_t i = 0; i < faces_num; ++i) {
+    for (uint32_t i = 0; i < vnum; ++i) {
 
-        Vector<float>& fids = raw.faces[i];
-        int j = fids.size() - 1;
-        switch (j) {
-            case 2:
-            case 8:
-                for (uint8_t k = 0; k < 3; ++k) {
-                    int doti = int(fids[k]);
-                    if (dots[doti].is_initialised()) {
-                        dots[doti].register_vert(&surfaces[surf_MAIN].verticesw[ indices ]);
-                        dots[doti].register_normal(&surfaces[surf_MAIN].normalsw[ indices ]);
-                    } else {
-                        forces[doti][0] = 0;
-                        forces[doti][1] = 0;
-                        forces[doti][2] = 0;
-                        dots[doti].init(
-                                &surfaces[surf_MAIN].verticesw[indices],
-                                &surfaces[surf_MAIN].normalsw[indices],
-                                &forces[doti]
-                                );
-                        dots[doti].register_vert(&surfaces[surf_FIBER].verticesw[ doti ]);
-                        dots[doti].register_vert(&surfaces[surf_TENSOR].verticesw[ doti ]);
-                    }
-                    ++indices;
-                }
-                break;
-            default:
-                break;
+        int doti = surfmain_vert_ids[i];
+
+        if (dots[doti].is_initialised()) {
+            dots[doti].register_vert(&surfaces[surf_MAIN].verticesw[ i ]);
+            dots[doti].register_normal(&surfaces[surf_MAIN].normalsw[ i ]);
+            if ( surfaces[surf_MAIN].uv2_enabled ) {
+                dots[doti].register_uv2(&surfaces[surf_MAIN].uvs2w[ i ]);
+            }
+        } else {
+            forces[doti][0] = 0;
+            forces[doti][1] = 0;
+            forces[doti][2] = 0;
+            Vector2* uv = 0;
+            if ( surfaces[surf_MAIN].uv2_enabled ) {
+                uv = &surfaces[surf_MAIN].uvs2w[i];
+            }
+            dots[doti].init(
+                    &surfaces[surf_MAIN].verticesw[i],
+                    &surfaces[surf_MAIN].normalsw[i],
+                    &forces[doti],
+                    uv
+                    );
+            dots[doti].register_vert(&surfaces[surf_FIBER].verticesw[ doti ]);
+            dots[doti].register_vert(&surfaces[surf_TENSOR].verticesw[ doti ]);
         }
 
     }
 
+    // validation
     for (uint32_t i = 0; i < dots_num; ++i) {
         if (!dots[i].is_initialised()) {
             std::cout <<
@@ -336,19 +378,6 @@ void Skin::generate(SkinRaw& raw) {
             purge();
             return;
         }
-        //        forces[i][0] = 0;
-        //        forces[i][1] = 0;
-        //        forces[i][2] = 0;
-        //        dots[i].init(
-        //                &surfaces[surf_MAIN].verticesw[i],
-        //                &surfaces[surf_MAIN].normalsw[i],
-        //                &forces[i]
-        //                );
-        //        dots[i].register_vert(&surfaces[surf_FIBER].verticesw[ i ]);
-        //        dots[i].register_vert(&surfaces[surf_TENSOR].verticesw[ i ]);
-        //        forces[1].x = -1 + 2 * (rand() * 1.f / RAND_MAX);
-        //        forces[1].y = -1 + 2 * (rand() * 1.f / RAND_MAX);
-        //        forces[1].z = -1 + 2 * (rand() * 1.f / RAND_MAX);
     }
 
     uint32_t fibid = 0;
